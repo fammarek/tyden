@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.2.1";
+const VERSION = "0.3.3";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
@@ -64,11 +64,13 @@ function save(){
   }
 }
 function week(k){
-  if (!DB.weeks[k]) DB.weeks[k] = {days:{}, free:{}, checked:{}, buy:{}};
+  if (!DB.weeks[k]) DB.weeks[k] = {days:{}, free:{}, days2:{}, free2:{}, checked:{}, buy:{}};
   const w = DB.weeks[k];
   if (!w.checked) w.checked = {};
   if (!w.buy) w.buy = {};
-  if (!w.free) w.free = {};   // Tage ohne Rezept, nur ein Name
+  if (!w.free) w.free = {};     // Tage ohne Rezept, nur ein Name
+  if (!w.days2) w.days2 = {};   // zweites Gericht am selben Tag
+  if (!w.free2) w.free2 = {};
   return w;
 }
 
@@ -387,12 +389,14 @@ function renderCalPicker(){
 }
 
 /* ---------- Tabs ---------- */
-let activeTab = "kalender";
+let activeTab = "woche";
 function setTab(name){
   activeTab = name;
   $$(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === name));
   $$(".view").forEach(v => v.classList.toggle("hidden", v.id !== "view-" + name));
   if (name === "notizen") sizePad();
+  window.scrollTo({top: 0});
+  if (seitenSync) setTimeout(seitenSync, 60);
 }
 
 /* ---------- Gesamtausgabe ---------- */
@@ -406,6 +410,7 @@ function renderAll(){
   renderMeals();
   renderShop();
   renderNotes();
+  if (seitenSync) setTimeout(seitenSync, 60);
 }
 function gotoWeek(delta){
   cur = shiftWeek(cur, delta);
@@ -420,19 +425,31 @@ function printHead(title){
   return '<div class="phead"><h1>' + title + '</h1><span>KW ' + cur.week + " · " +
     fmtD(mon) + " – " + fmtD(sun) + sun.getUTCFullYear() + '</span></div>';
 }
+/* Essensblock im Ausdruck, eingefärbt nach Kategorie */
+function pmBlock(dish, label, zweit){
+  const c = (dish.cat && typeof CATS !== "undefined" && CATS[dish.cat]) ? CATS[dish.cat].c : "#7D867C";
+  return '<div class="pm' + (zweit ? " zweit" : "") + '" style="border-left-color:' + c +
+    ';background:' + tint(c, zweit ? .10 : .13) + '"><i style="color:' + c + '">' + label +
+    (dish.cat && CATS[dish.cat] ? " · " + CATS[dish.cat].n : "") + '</i>' + esc(dish.name) + '</div>';
+}
+
 function printWochenplan(){
   const dates = weekDates();
   const firstKey = dates[0].key, lastKey = dates[6].key;
   const cols = dates.map(({day, date, key}) => {
     const evs = eventsOn(key);
-    const dish = typeof dishOfDay === "function" ? dishOfDay(day) : null;
+    const dish  = typeof dishOfDay === "function" ? dishOfDay(day, 1) : null;
+    const dish2 = typeof dishOfDay === "function" ? dishOfDay(day, 2) : null;
     return '<div class="pday"><h4>' + DAYNAME[day] + '</h4><div class="pd">' + fmtD(date) + '</div>' +
-      (dish ? '<div class="pm"><i>Essen</i>' + esc(dish.name) + '</div>' : '') +
+      (dish ? pmBlock(dish, "Essen") : '') +
+      (dish2 ? pmBlock(dish2, "Zweites Gericht", true) : '') +
       evs.map(ev => {
         const mehrtaegig = ev.end > ev.start;
-        return '<div class="pe' + (mehrtaegig ? " pband" : "") +
-          '" style="border-color:' + (ev.color || "#999") + '"><i>' +
-          esc(eventLabel(ev, key, firstKey, lastKey)) + '</i>' + esc(ev.text) + '</div>';
+        const c = ev.color || "#2C5140";
+        return '<div class="pe' + (mehrtaegig ? " pband" : "") + '" style="border-color:' + c +
+          ';background:' + tint(c, mehrtaegig ? .18 : .11) + '"><i>' +
+          esc(eventLabel(ev, key, firstKey, lastKey)) + '</i>' + esc(ev.text) +
+          (ev.note ? ' <em>' + esc(ev.note) + '</em>' : '') + '</div>';
       }).join("") +
       (DB.notes[key] ? '<div class="pn">' + esc(DB.notes[key]) + '</div>' : '') +
       '</div>';
@@ -451,6 +468,53 @@ function doPrint(){
   $("#dPrint").close();
   setTimeout(() => window.print(), 120);
 }
+
+/* ---------- Scrollbalken für die ganze Seite ----------
+   Auf dem iPad soll sich alles auch ohne Wischen bedienen lassen. */
+function initPageScroll(){
+  const leiste = $("#pageScroll"), track = $("#pageTrack"), thumb = $("#pageThumb");
+  if (!leiste || !track || !thumb) return;
+
+  function hoehen(){
+    return {
+      sicht: window.innerHeight,
+      gesamt: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
+      oben: window.scrollY || document.documentElement.scrollTop || 0
+    };
+  }
+  function sync(){
+    const h = hoehen();
+    const scrollbar = h.gesamt - h.sicht > 24;
+    leiste.hidden = !scrollbar;
+    document.body.classList.toggle("hat-balken", scrollbar);
+    if (!scrollbar) return;
+    const bahn = track.clientHeight;
+    const hoehe = Math.max(36, bahn * Math.min(1, h.sicht / h.gesamt));
+    thumb.style.height = hoehe + "px";
+    thumb.style.top = (h.oben / (h.gesamt - h.sicht)) * (bahn - hoehe) + "px";
+  }
+  function scrollZu(clientY){
+    const r = track.getBoundingClientRect(), h = hoehen();
+    const anteil = (clientY - r.top - thumb.offsetHeight / 2) / Math.max(1, r.height - thumb.offsetHeight);
+    window.scrollTo({top: Math.max(0, Math.min(1, anteil)) * (h.gesamt - h.sicht)});
+  }
+
+  let zieht = false;
+  track.addEventListener("pointerdown", e => { zieht = true; track.setPointerCapture(e.pointerId); scrollZu(e.clientY); });
+  track.addEventListener("pointermove", e => { if (zieht) scrollZu(e.clientY); });
+  const los = () => { zieht = false; };
+  track.addEventListener("pointerup", los);
+  track.addEventListener("pointercancel", los);
+
+  $("#pageUp").onclick = () => window.scrollBy({top: -window.innerHeight * 0.8, behavior: "smooth"});
+  $("#pageDown").onclick = () => window.scrollBy({top: window.innerHeight * 0.8, behavior: "smooth"});
+
+  window.addEventListener("scroll", sync, {passive: true});
+  window.addEventListener("resize", sync);
+  seitenSync = sync;
+  sync();
+}
+let seitenSync = null;
 
 /* ---------- Aktualisieren ---------- */
 let refreshLaeuft = false;
@@ -544,6 +608,7 @@ function start(){
   initEssen();
   initPad();
   initClaude();
+  initPageScroll();
   renderAll();
 
   // gespeichertes Token weiterverwenden, sonst still ein neues holen

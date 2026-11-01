@@ -1300,5 +1300,259 @@ window.REZEPTE = [
     "Mit Basilikum und einem Faden Olivenöl servieren."
   ],
   tipp: "Zucchini vorher anbräunen statt nur zu kochen, das ist der Unterschied zwischen fad und würzig."
+},
+{
+  id: "burstgulas", name: "Buřtguláš", cat: "fleisch", win: "alle",
+  time: 40, kh: 11, ok: false,
+  sub: "Wurstgulasch, böhmisch — lebt von den Zwiebeln.",
+  zut: [
+    ["Debreziner", 600, "g", "f"],
+    ["Zwiebeln", 700, "g", "g"],
+    ["Schweineschmalz", 3, "EL", "m"],
+    ["Paprikapulver, edelsüß", 2, "EL", "v"],
+    ["Tomatenmark", 2, "EL", "v"],
+    ["Knoblauchzehen", 3, "", "g"],
+    ["Rinderbrühe", 400, "ml", "v"],
+    ["Majoran", 1, "TL", "v"],
+    ["Kümmel, gemahlen", 1, "TL", "v"],
+    ["Essig", 1, "EL", "v"],
+    ["Salz", 1, "TL", "v"]
+  ],
+  steps: [
+    "Zwiebeln in Streifen schneiden und in Schmalz 20 Minuten goldbraun schmoren, sie sind die Sauce.",
+    "Wurst in dicke Scheiben schneiden und kurz mitbraten, bis die Ränder Farbe nehmen.",
+    "Topf von der Platte ziehen, erst dann Paprikapulver und Tomatenmark einrühren, sonst wird es bitter.",
+    "Mit Brühe ablöschen, Knoblauch, Kümmel und Majoran zugeben.",
+    "20 Minuten offen einköcheln lassen, bis die Sauce sämig ist.",
+    "Mit Essig und Salz abschmecken."
+  ],
+  tipp: "Klassisch mit Brot. Ohne Brot schmeckt es mit einem Klecks Sauerrahm genauso gut."
+},
+{
+  id: "fleischkuechlein", name: "Fleischküchlein mit Salzkartoffeln", cat: "fleisch", win: "we",
+  time: 40, kh: 38, ok: false,
+  sub: "Schwäbisch, mit Petersilienkartoffeln.",
+  zut: [
+    ["Hackfleisch, gemischt", 700, "g", "f"],
+    ["Kartoffeln", 1000, "g", "g"],
+    ["Zwiebel", 1, "", "g"],
+    ["Eier", 1, "", "m"],
+    ["Semmelbrösel", 60, "g", "v"],
+    ["Senf", 1, "EL", "v"],
+    ["Majoran", 1, "TL", "v"],
+    ["Butterschmalz", 3, "EL", "m"],
+    ["Petersilie", 0.5, "Bund", "g"],
+    ["Butter", 30, "g", "m"],
+    ["Salz", 2, "TL", "v"]
+  ],
+  steps: [
+    "Kartoffeln schälen und in Salzwasser 20 Minuten garen.",
+    "Zwiebel fein würfeln und in etwas Fett glasig dünsten, abkühlen lassen.",
+    "Hack mit Zwiebel, Ei, Bröseln, Senf, Majoran und Salz verkneten und 10 Minuten ruhen lassen.",
+    "Flache Küchlein formen, dann garen sie gleichmäßig durch.",
+    "In Butterschmalz bei mittlerer Hitze je Seite 5 Minuten braten.",
+    "Kartoffeln abgießen, mit Butter und Petersilie schwenken und dazu servieren."
+  ],
+  tipp: "Unter der Woche ohne Brösel und mit Gurkensalat statt Kartoffeln."
+},
+{
+  id: "pizza-margherita", name: "Pizza Margherita", cat: "veg", win: "we",
+  time: 110, kh: 62, ok: false,
+  sub: "Langer Teig, kurze Backzeit, heißer Ofen.",
+  zut: [
+    ["Mehl, Typ 00", 500, "g", "v"],
+    ["Trockenhefe", 1, "Prise", "v"],
+    ["Wasser", 320, "ml", "v"],
+    ["Olivenöl", 3, "EL", "v"],
+    ["passierte Tomaten", 400, "g", "v"],
+    ["Mozzarella", 375, "g", "m"],
+    ["Basilikum", 1, "Bund", "g"],
+    ["Salz", 2, "TL", "v"]
+  ],
+  steps: [
+    "Mehl, Wasser, Hefe und Salz verkneten, bis der Teig glatt ist, und zugedeckt 90 Minuten gehen lassen.",
+    "Ofen mit Blech oder Stein auf höchster Stufe mindestens 30 Minuten vorheizen, das ist der halbe Erfolg.",
+    "Teig in vier Stücke teilen und mit den Händen ausziehen, nicht ausrollen, damit der Rand luftig bleibt.",
+    "Passierte Tomaten salzen und dünn aufstreichen, einen Rand frei lassen.",
+    "Mozzarella abtropfen lassen, zupfen und verteilen.",
+    "Je Pizza 6 bis 8 Minuten backen, bis der Rand Blasen wirft, Basilikum erst danach darauflegen."
+  ],
+  tipp: "Mozzarella eine halbe Stunde vorher abtropfen lassen, sonst schwimmt die Pizza."
+},
+{
+  id: "gulasch-spaetzle", name: "Gulasch mit Spätzle und Salat", cat: "fleisch", win: "we",
+  time: 160, kh: 58, ok: false,
+  sub: "Die Sonntagsvariante mit allem drum und dran.",
+  zut: [
+    ["Rindergulasch", 1000, "g", "f"],
+    ["Zwiebeln", 800, "g", "g"],
+    ["Schweineschmalz", 3, "EL", "m"],
+    ["Paprikapulver, edelsüß", 3, "EL", "v"],
+    ["Tomatenmark", 2, "EL", "v"],
+    ["Knoblauchzehen", 3, "", "g"],
+    ["Rinderbrühe", 400, "ml", "v"],
+    ["Kümmel, gemahlen", 1, "TL", "v"],
+    ["Majoran", 1, "TL", "v"],
+    ["Mehl", 400, "g", "v"],
+    ["Eier", 4, "", "m"],
+    ["Blattsalat", 200, "g", "g"],
+    ["Essig", 3, "EL", "v"],
+    ["Öl", 4, "EL", "v"],
+    ["Salz", 3, "TL", "v"]
+  ],
+  steps: [
+    "Zwiebeln in Streifen 20 Minuten in Schmalz goldbraun schmoren.",
+    "Fleisch salzen und portionsweise scharf anbraten.",
+    "Topf von der Platte ziehen, Paprikapulver und Tomatenmark einrühren, mit Brühe ablöschen.",
+    "Mit Kümmel, Majoran und Knoblauch zugedeckt 2 Stunden bei kleinster Hitze schmoren.",
+    "Für die Spätzle Mehl, Eier, Salz und einen Schuss Wasser schlagen, bis der Teig Blasen wirft, und ins siedende Salzwasser schaben.",
+    "Salat mit Essig, Öl und Salz anmachen und alles zusammen servieren."
+  ],
+  tipp: "Das Gulasch am Vortag kochen, dann hast du am Sonntag nur noch die Spätzle zu machen."
+},
+{
+  id: "quesadillas", name: "Quesadillas mit Bohnen und Käse", cat: "veg", win: "we",
+  time: 25, kh: 46, ok: false,
+  sub: "In der trockenen Pfanne, von beiden Seiten knusprig.",
+  zut: [
+    ["Weizentortillas", 8, "", "v"],
+    ["schwarze Bohnen, Dose", 800, "g", "v"],
+    ["Käse, gerieben", 250, "g", "m"],
+    ["Zwiebel", 1, "", "g"],
+    ["Knoblauchzehen", 2, "", "g"],
+    ["Paprika, rot", 1, "", "g"],
+    ["Kreuzkümmel, gemahlen", 2, "TL", "v"],
+    ["Paprikapulver", 1, "TL", "v"],
+    ["Limette", 1, "", "g"],
+    ["Sauerrahm", 200, "g", "m"],
+    ["Öl", 2, "EL", "v"],
+    ["Salz", 1, "TL", "v"]
+  ],
+  steps: [
+    "Zwiebel, Knoblauch und Paprika fein würfeln und in Öl anbraten.",
+    "Kreuzkümmel und Paprikapulver kurz mitrösten, abgetropfte Bohnen zugeben.",
+    "Die Hälfte der Bohnen zerdrücken, das hält die Füllung später zusammen, und mit Limette und Salz abschmecken.",
+    "Je eine Tortilla zur Hälfte mit Füllung und Käse belegen und zuklappen.",
+    "In der trockenen Pfanne je Seite 3 Minuten backen, bis der Käse schmilzt und die Außenseite Flecken bekommt.",
+    "In Spalten schneiden und mit Sauerrahm servieren."
+  ],
+  tipp: "Nicht zu voll füllen, sonst quillt alles heraus und verbrennt in der Pfanne."
+},
+{
+  id: "vanillepudding", name: "Vanillepudding", cat: "veg", win: "we",
+  time: 20, kh: 28, ok: false,
+  sub: "Selbst gekocht, mit echter Vanille.",
+  zut: [
+    ["Milch", 1000, "ml", "m"],
+    ["Sahne", 100, "ml", "m"],
+    ["Zucker", 80, "g", "v"],
+    ["Speisestärke", 60, "g", "v"],
+    ["Eigelb", 3, "", "m"],
+    ["Vanilleschote", 1, "", "v"],
+    ["Salz", 1, "Prise", "v"]
+  ],
+  steps: [
+    "Vanilleschote längs aufschlitzen und das Mark herauskratzen.",
+    "Stärke, Zucker und Eigelbe mit etwa 150 ml der Milch glatt rühren, es darf kein Klümpchen bleiben.",
+    "Restliche Milch mit Sahne, Vanillemark, Schote und Salz aufkochen und die Schote entfernen.",
+    "Topf vom Herd ziehen, die angerührte Masse unter Rühren einlaufen lassen.",
+    "Zurück auf die Platte und unter ständigem Rühren einmal aufwallen lassen, bis es bindet.",
+    "In Schälchen füllen und mit Frischhaltefolie direkt auf der Oberfläche abkühlen lassen."
+  ],
+  tipp: "Im Thermomix: alle Zutaten einfüllen, 7 Minuten bei 90 Grad auf Stufe 4. Bitte beim Review auf dein TM5-Rezept anpassen."
+},
+{
+  id: "karotten-kartoffelsuppe", name: "Karotten-Kartoffelsuppe", cat: "suppe", win: "we",
+  time: 35, kh: 0, ok: false,
+  sub: "Hausrezept — Zubereitung sitzt im Kopf.",
+  todo: "bewusst ohne Rezept",
+  zut: [
+    
+  ],
+  steps: [
+    
+  ],
+  tipp: ""
+},
+{
+  id: "ofenpfannkuchen", name: "Ofenpfannkuchen", cat: "veg", win: "we",
+  time: 35, kh: 42, ok: false,
+  sub: "Geht im Ofen hoch wie ein Soufflé.",
+  zut: [
+    ["Eier", 6, "", "m"],
+    ["Milch", 400, "ml", "m"],
+    ["Mehl", 240, "g", "v"],
+    ["Butter", 60, "g", "m"],
+    ["Zucker", 2, "EL", "v"],
+    ["Salz", 1, "TL", "v"],
+    ["Puderzucker", 2, "EL", "v"],
+    ["Zitrone", 1, "", "g"]
+  ],
+  steps: [
+    "Ofen auf 220 Grad Ober- und Unterhitze vorheizen, mit der leeren Form darin.",
+    "Eier, Milch, Mehl, Zucker und Salz glatt mixen und 10 Minuten stehen lassen.",
+    "Butter in die heiße Form geben und schwenken, bis sie schäumt.",
+    "Teig hineingießen und sofort zurück in den Ofen.",
+    "20 Minuten backen und die Tür dabei geschlossen lassen, sonst fällt er zusammen.",
+    "Mit Puderzucker und Zitrone servieren, am besten gleich."
+  ],
+  tipp: "Er fällt nach ein paar Minuten in sich zusammen, das gehört dazu. Trotzdem sofort auf den Tisch."
+},
+{
+  id: "ofensuppe-rind", name: "Ofensuppe mit Rind", cat: "suppe", win: "alle",
+  time: 180, kh: 10, ok: false,
+  sub: "Alles in einen Bräter, der Ofen macht den Rest.",
+  zut: [
+    ["Rindfleisch zum Schmoren", 800, "g", "f"],
+    ["Karotten", 4, "", "g"],
+    ["Knollensellerie", 250, "g", "g"],
+    ["Lauch", 1, "Stange", "g"],
+    ["Zwiebeln", 2, "", "g"],
+    ["Knoblauchzehen", 4, "", "g"],
+    ["passierte Tomaten", 200, "g", "v"],
+    ["Rinderbrühe", 1500, "ml", "v"],
+    ["Lorbeerblätter", 2, "", "v"],
+    ["Pfefferkörner", 1, "TL", "v"],
+    ["Olivenöl", 3, "EL", "v"],
+    ["Petersilie", 0.5, "Bund", "g"],
+    ["Salz", 2, "TL", "v"]
+  ],
+  steps: [
+    "Ofen auf 160 Grad vorheizen.",
+    "Fleisch in große Würfel schneiden, trocken tupfen, salzen und im Bräter auf dem Herd rundum scharf anbraten.",
+    "Zwiebeln und Knoblauch zugeben und kurz mitbraten, Tomaten einrühren.",
+    "Brühe, Lorbeer und Pfefferkörner angießen, Deckel auflegen.",
+    "2 Stunden in den Ofen stellen, danach das grob geschnittene Gemüse zugeben.",
+    "Weitere 30 Minuten ohne Deckel garen, abschmecken und mit Petersilie servieren."
+  ],
+  tipp: "Im Ofen kocht nichts über und nichts brennt an. Einmal anbraten, dann ist Ruhe."
+},
+{
+  id: "ofensuppe-huhn", name: "Ofensuppe mit Huhn", cat: "suppe", win: "alle",
+  time: 110, kh: 9, ok: false,
+  sub: "Ein Bräter, keine Aufsicht nötig.",
+  zut: [
+    ["Hähnchenschenkel", 1000, "g", "f"],
+    ["Karotten", 4, "", "g"],
+    ["Knollensellerie", 200, "g", "g"],
+    ["Lauch", 1, "Stange", "g"],
+    ["Zwiebel", 1, "", "g"],
+    ["Knoblauchzehen", 3, "", "g"],
+    ["Hühnerbrühe", 1500, "ml", "v"],
+    ["Lorbeerblätter", 2, "", "v"],
+    ["Pfefferkörner", 1, "TL", "v"],
+    ["Olivenöl", 2, "EL", "v"],
+    ["Petersilie", 0.5, "Bund", "g"],
+    ["Salz", 2, "TL", "v"]
+  ],
+  steps: [
+    "Ofen auf 180 Grad vorheizen.",
+    "Hähnchenschenkel salzen, mit Öl einreiben und im Bräter 25 Minuten offen rösten, bis die Haut braun ist.",
+    "Zwiebel, Knoblauch, Lorbeer und Pfefferkörner zugeben und mit Brühe aufgießen.",
+    "Zugedeckt 45 Minuten in den Ofen.",
+    "Gemüse in Würfeln zugeben und weitere 20 Minuten garen.",
+    "Fleisch von den Knochen lösen, zurück in die Suppe geben, abschmecken und mit Petersilie bestreuen."
+  ],
+  tipp: "Das Rösten am Anfang ist der ganze Geschmack. Wer das Huhn nur kocht, bekommt blasse Brühe."
 }
 ];

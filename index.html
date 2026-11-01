@@ -37,22 +37,18 @@
   </div>
 
   <nav class="tabs" id="tabs">
-    <button class="tab on" data-tab="kalender">Kalender</button>
-    <button class="tab" data-tab="essen">Essen</button>
+    <button class="tab on" data-tab="woche">Woche</button>
     <button class="tab" data-tab="einkauf">Einkauf</button>
     <button class="tab" data-tab="notizen">Notizen</button>
   </nav>
 </header>
 
 <main>
-  <!-- ---------- Kalender ---------- -->
-  <section class="view" id="view-kalender">
+  <!-- ---------- Woche: Termine oben, Essen darunter ---------- -->
+  <section class="view" id="view-woche">
     <div class="weekgrid" id="calGrid"></div>
-  </section>
 
-  <!-- ---------- Essen ---------- -->
-  <section class="view hidden" id="view-essen">
-    <div class="bar">
+    <div class="bar essenbar">
       <h2>Zdravé meníčko</h2>
       <div class="barcats" id="mealCounts"></div>
       <div class="baracts">
@@ -146,7 +142,7 @@
   <div class="top" style="background:var(--ink)">
     <button class="x" data-close>&times;</button>
     <p class="lbl light" id="pickDay"></p>
-    <h2>Gericht wählen</h2>
+    <h2 id="pickTitle">Gericht wählen</h2>
   </div>
   <div class="sbody">
     <div class="freebox">
@@ -320,6 +316,13 @@
     <button class="btn ghost" data-close style="margin-left:auto">Schließen</button>
   </div>
 </div></dialog>
+
+<!-- Scrollbalken für die ganze Seite, damit auf dem iPad nicht gewischt werden muss -->
+<div class="pagescroll" id="pageScroll" hidden>
+  <button class="tool" id="pageUp" aria-label="nach oben">&#9650;</button>
+  <div class="track" id="pageTrack"><div class="thumb" id="pageThumb"></div></div>
+  <button class="tool" id="pageDown" aria-label="nach unten">&#9660;</button>
+</div>
 
 <div class="toast" id="toast"></div>
 <div id="print"></div>

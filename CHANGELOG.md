@@ -9,6 +9,52 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.3.3 — 1. November 2026
+
+**Behoben**
+- Auf der gedruckten Einkaufsliste zogen sich die Kästchen zum Abhaken über die
+  halbe Zeile, weil eine allgemeine Regel ihre Breite überstimmte. Sie sind jetzt
+  wieder kleine Quadrate.
+
+---
+
+## v0.3.2 — 1. November 2026
+
+**Geändert**
+- Der Ausdruck ist jetzt farbig. Termine übernehmen die Farbe aus Google, Gerichte
+  die Farbe ihrer Kategorie, mehrtägige Termine sind kräftiger hinterlegt und das
+  zweite Gericht trägt einen gestrichelten Rand. Der Ort eines Termins steht mit
+  auf dem Blatt.
+
+---
+
+## v0.3.1 — 1. November 2026
+
+**Neu**
+- Scrollbalken am rechten Rand für die ganze Seite, mit Pfeilen oben und unten.
+  Er erscheint nur, wenn die Seite länger ist als der Bildschirm, und verschwindet
+  von selbst. Damit lässt sich auch die Wochenansicht ohne Wischgeste bedienen.
+
+---
+
+## v0.3 — 1. November 2026
+
+**Neu**
+- Zehn Gerichte dazu: Buřtguláš, Fleischküchlein mit Salzkartoffeln, Pizza Margherita,
+  Gulasch mit Spätzle und Salat, Quesadillas mit Bohnen und Käse, Vanillepudding,
+  Karotten-Kartoffelsuppe (bewusst ohne Rezept), Ofenpfannkuchen sowie Ofensuppe
+  mit Rind und mit Huhn. Die Kartei zählt jetzt 62 Gerichte.
+- Zweites Gericht pro Tag, etwa wenn die Erwachsenen anders essen als die Kinder.
+  Beide Plätze fließen in die Einkaufsliste, den Plan und den Ausdruck ein.
+  Der Würfel belegt nur den ersten Platz, der zweite bleibt in deiner Hand.
+- Wird der erste Platz geleert, rückt das zweite Gericht nach.
+
+**Geändert**
+- Kalender und Essen liegen jetzt im selben Tab "Woche", die Termine oben,
+  der Essensplan darunter. Damit sind es drei Tabs statt vier.
+
+---
+
 ## v0.2.1 — 1. November 2026
 
 **Behoben**

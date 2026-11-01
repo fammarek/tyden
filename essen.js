@@ -29,18 +29,36 @@ function saveRecipes(){
 
 const byId = id => RECIPES.find(r => r.id === id);
 const colorOf = r => (CATS[r.cat] || CATS.veg).c;
-function freeAt(day){ return week(keyOf(cur)).free[day] || ""; }
-function dishOfDay(day){
-  const w = week(keyOf(cur));
-  const r = byId(w.days[day]);
+/* Jeder Tag hat zwei Plätze: 1 ist das Hauptgericht, 2 das zweite,
+   etwa wenn die Erwachsenen anders essen als die Kinder. */
+function feldNamen(slot){
+  return slot === 2 ? {d:"days2", f:"free2"} : {d:"days", f:"free"};
+}
+function freeAt(day, slot){
+  const n = feldNamen(slot || 1);
+  return week(keyOf(cur))[n.f][day] || "";
+}
+function dishOfDay(day, slot){
+  const w = week(keyOf(cur)), n = feldNamen(slot || 1);
+  const r = byId(w[n.d][day]);
   if (r) return r;
-  const f = w.free[day];
+  const f = w[n.f][day];
   return f ? {name:f, free:true, time:0, kh:0, sub:"", zut:[], steps:[]} : null;
 }
-function setFree(day, name){
-  const w = week(keyOf(cur));
-  delete w.days[day];
-  if (name) w.free[day] = name; else delete w.free[day];
+function setFree(day, name, slot){
+  const w = week(keyOf(cur)), n = feldNamen(slot || 1);
+  delete w[n.d][day];
+  if (name) w[n.f][day] = name; else delete w[n.f][day];
+  save();
+}
+function clearSlot(day, slot){
+  const w = week(keyOf(cur)), n = feldNamen(slot || 1);
+  delete w[n.d][day];
+  delete w[n.f][day];
+  if ((slot || 1) === 1){          // ohne Hauptgericht rückt das zweite nach
+    if (w.days2[day]){ w.days[day] = w.days2[day]; delete w.days2[day]; }
+    else if (w.free2[day]){ w.free[day] = w.free2[day]; delete w.free2[day]; }
+  }
   save();
 }
 
@@ -55,6 +73,12 @@ function amount(a, u, port){
   if (!a) return "";
   const v = fmtAmount(a * port / 4);
   return u ? v + " " + u : v + "×";
+}
+
+function tintHex(hex, a){
+  const h = String(hex).replace("#","");
+  const n = parseInt(h, 16);
+  return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
 }
 
 /* ---------- Vorrat ---------- */
@@ -86,61 +110,85 @@ function renderMeals(){
 
   dates.forEach(({day, date, key}) => {
     const we = (day === "Sa" || day === "So");
-    const r = byId(w.days[day]);
-    const f = w.free[day];
     const col = document.createElement("div");
     col.className = "daycol" + (we ? " we" : "") + (key === heute ? " today" : "");
     col.style.minHeight = "0";
     col.innerHTML =
       '<div class="dayhead"><b>' + DAYNAME[day] + '</b><span>' + fmtD(date) + '</span></div>' +
-      '<div class="daybody"><div class="slot"></div>' +
+      '<div class="daybody"><div class="slots"></div>' +
         '<div class="rowacts">' +
           '<button data-roll="' + day + '" title="Neu würfeln">&#9861;</button>' +
-          ((r || f) ? '<button data-clr="' + day + '" title="Leeren">&times;</button>' : '') +
         '</div>' +
       '</div>';
+    const box = col.querySelector(".slots");
 
-    const slot = col.querySelector(".slot");
-    const b = document.createElement("button");
-    if (r){
-      b.className = "dish";
-      b.style.background = colorOf(r);
-      b.innerHTML =
-        '<div class="c">' + CATS[r.cat].n + (r.win === "we" ? " &middot; Sa/So" : "") + '</div>' +
-        '<div class="n">' + esc(r.name) + '</div>' +
-        '<div class="m"><span>' + r.time + ' Min.</span><span>' +
-          (r.todo ? "Rezept offen" : "ca. " + r.kh + " g KH") + '</span></div>';
-      b.onclick = () => openRecipe(r);
-    } else if (f){
-      b.className = "dish freecard";
-      b.innerHTML =
-        '<div class="c">Freies Gericht</div>' +
-        '<div class="n">' + esc(f) + '</div>' +
-        '<div class="m"><span>ohne Rezept</span><span>nicht auf der Liste</span></div>';
-      b.onclick = () => openPicker(day);
-    } else {
-      b.className = "empty";
-      b.textContent = "Gericht wählen";
-      b.onclick = () => openPicker(day);
-    }
-    slot.appendChild(b);
+    [1, 2].forEach(slot => {
+      const n = feldNamen(slot);
+      const r = byId(w[n.d][day]);
+      const f = w[n.f][day];
+      if (!r && !f){
+        if (slot === 1){
+          const b = document.createElement("button");
+          b.className = "empty";
+          b.textContent = "Gericht wählen";
+          b.onclick = () => openPicker(day, 1);
+          box.appendChild(b);
+        } else {
+          const b = document.createElement("button");
+          b.className = "addslot";
+          b.textContent = "+ zweites Gericht";
+          b.onclick = () => openPicker(day, 2);
+          box.appendChild(b);
+        }
+        return;
+      }
+      const wrap = document.createElement("div");
+      wrap.className = "slotwrap" + (slot === 2 ? " zweit" : "");
+      const b = document.createElement("button");
+      if (r){
+        b.className = "dish";
+        b.style.background = colorOf(r);
+        b.innerHTML =
+          '<div class="c">' + (slot === 2 ? "Zweites &middot; " : "") + CATS[r.cat].n +
+            (r.win === "we" ? " &middot; Sa/So" : "") + '</div>' +
+          '<div class="n">' + esc(r.name) + '</div>' +
+          '<div class="m"><span>' + r.time + ' Min.</span><span>' +
+            (r.todo ? "Rezept offen" : "ca. " + r.kh + " g KH") + '</span></div>';
+        b.onclick = () => openRecipe(r);
+      } else {
+        b.className = "dish freecard";
+        b.innerHTML =
+          '<div class="c">' + (slot === 2 ? "Zweites &middot; " : "") + 'Freies Gericht</div>' +
+          '<div class="n">' + esc(f) + '</div>' +
+          '<div class="m"><span>ohne Rezept</span></div>';
+        b.onclick = () => openPicker(day, slot);
+      }
+      const x = document.createElement("button");
+      x.className = "slotx";
+      x.innerHTML = "&times;";
+      x.title = "Platz leeren";
+      x.onclick = ev => {
+        ev.stopPropagation();
+        clearSlot(day, slot);
+        renderMeals(); renderShop(); renderCal();
+      };
+      wrap.appendChild(b);
+      wrap.appendChild(x);
+      box.appendChild(wrap);
+    });
+
     grid.appendChild(col);
   });
 
   $$("#mealGrid [data-roll]").forEach(b => b.onclick = () => rollDay(b.dataset.roll));
-  $$("#mealGrid [data-clr]").forEach(b => b.onclick = () => {
-    const w2 = week(keyOf(cur));
-    delete w2.days[b.dataset.clr];
-    delete w2.free[b.dataset.clr];
-    save(); renderMeals(); renderShop(); renderCal();
-  });
-
   const we = RECIPES.filter(r => r.win === "we").length;
   const done = RECIPES.filter(r => r.ok).length;
   $("#poolInfo").textContent = RECIPES.length + " Gerichte · " + (RECIPES.length - we) +
     " ganze Woche · " + we + " nur Sa/So";
-  $("#mealCounts").textContent = (Object.keys(w.days).length + Object.keys(w.free).length) +
-    " von 7 Tagen belegt · " +
+  const belegt = new Set(Object.keys(w.days).concat(Object.keys(w.free))).size;
+  const zweite = Object.keys(w.days2).length + Object.keys(w.free2).length;
+  $("#mealCounts").textContent = belegt + " von 7 Tagen belegt" +
+    (zweite ? " · " + (zweite === 1 ? "ein zweites Gericht" : zweite + " zweite Gerichte") : "") + " · " +
     done + " von " + RECIPES.length + " Rezepten geprüft";
 }
 
@@ -205,7 +253,7 @@ function rollWeek(){
   const recent = recentIds();
   // Tage mit freiem Gericht bleiben, wie sie sind
   ["Sa","So"].concat(shuffle(["Mo","Di","Mi","Do","Fr"])).forEach(d => {
-    if (w.free[d]) return;
+    if (w.free[d]) return;   // freie Gerichte und zweite Plätze bleiben unangetastet
     const r = pickFor(d, w, recent);
     if (r) w.days[d] = r.id;
   });
@@ -265,21 +313,22 @@ function drawRecipe(){
 }
 
 /* ---------- Auswahl ---------- */
-let pickDay = null;
-function openPicker(d){
-  pickDay = d;
-  $("#pickDay").textContent = DAYNAME[d];
+let pickDay = null, pickSlot = 1;
+function openPicker(d, slot){
+  pickDay = d; pickSlot = slot || 1;
+  $("#pickDay").textContent = DAYNAME[d] + (pickSlot === 2 ? " · zweites Gericht" : "");
+  $("#pickTitle").textContent = pickSlot === 2 ? "Zweites Gericht wählen" : "Gericht wählen";
   $("#pickSearch").value = "";
-  $("#freeName").value = freeAt(d);
+  $("#freeName").value = freeAt(d, pickSlot);
   drawPicker();
   $("#dPick").showModal();
 }
 function saveFree(){
   const n = $("#freeName").value.trim();
-  setFree(pickDay, n);
+  setFree(pickDay, n, pickSlot);
   $("#dPick").close();
   renderMeals(); renderShop(); renderCal();
-  toast(n ? "Eingetragen — ohne Zutaten" : "Tag geleert");
+  toast(n ? "Eingetragen — ohne Zutaten" : "Platz geleert");
 }
 function drawPicker(){
   const q = $("#pickSearch").value.toLowerCase();
@@ -291,10 +340,13 @@ function drawPicker(){
       '<div class="m">' + r.time + ' Min.' + (r.todo ? " · Rezept offen" : " · " + r.kh + " g KH") + '</div>' +
     '</button>').join("") : '<p class="hint">Nichts gefunden.</p>';
   $$("#pickGrid button").forEach(b => b.onclick = () => {
-    const w = week(keyOf(cur));
-    Object.keys(w.days).forEach(d => { if (w.days[d] === b.dataset.id) delete w.days[d]; });
-    delete w.free[pickDay];
-    w.days[pickDay] = b.dataset.id;
+    const w = week(keyOf(cur)), n = feldNamen(pickSlot);
+    // dasselbe Gericht nicht zweimal in derselben Woche auf Platz 1
+    if (pickSlot === 1){
+      Object.keys(w.days).forEach(d => { if (w.days[d] === b.dataset.id) delete w.days[d]; });
+    }
+    delete w[n.f][pickDay];
+    w[n.d][pickDay] = b.dataset.id;
     save(); $("#dPick").close(); renderMeals(); renderShop(); renderCal();
   });
 }
@@ -302,7 +354,7 @@ function drawPicker(){
 /* ---------- Einkaufsliste ---------- */
 function buildList(){
   const w = week(keyOf(cur)), sum = {};
-  Object.values(w.days).forEach(id => {
+  Object.values(w.days).concat(Object.values(w.days2 || {})).forEach(id => {
     const r = byId(id);
     if (!r) return;
     r.zut.forEach(z => {
@@ -377,8 +429,11 @@ function listText(){
     if (!it.length) return;
     t += "\n*" + GRP[g] + "*\n" + it.map(i => "• " + i.n + " — " + amount(i.a, i.u, port)).join("\n") + "\n";
   });
-  const plan = DAYS.filter(d => w.days[d] || w.free[d])
-    .map(d => d + ": " + (w.days[d] ? byId(w.days[d]).name : w.free[d]));
+  const plan = DAYS.filter(d => w.days[d] || w.free[d] || w.days2[d] || w.free2[d]).map(d => {
+    const eins = w.days[d] ? byId(w.days[d]).name : (w.free[d] || "");
+    const zwei = w.days2[d] ? byId(w.days2[d]).name : (w.free2[d] || "");
+    return d + ": " + eins + (zwei ? " / " + zwei : "");
+  });
   if (plan.length) t += "\n*Plan*\n" + plan.join("\n");
   return t;
 }
@@ -504,7 +559,8 @@ function deleteDish(){
   if (!confirm("„" + r.name + "“ wirklich löschen?")) return;
   RECIPES = RECIPES.filter(x => x.id !== editId);
   Object.values(DB.weeks).forEach(w => {
-    Object.keys(w.days).forEach(d => { if (w.days[d] === editId) delete w.days[d]; });
+    Object.keys(w.days || {}).forEach(d => { if (w.days[d] === editId) delete w.days[d]; });
+    Object.keys(w.days2 || {}).forEach(d => { if (w.days2[d] === editId) delete w.days2[d]; });
   });
   saveRecipes(); save();
   $("#dEdit").close(); renderMeals(); renderShop();
@@ -524,9 +580,13 @@ function printEssen(){
   const cols = weekDates().map(({day, date}) => {
     const r = byId(w.days[day]);
     const f = w.free[day];
+    const r2 = byId(w.days2[day]);
+    const f2 = w.free2[day];
     let inhalt;
     if (r){
-      inhalt = '<div class="pm"><i>' + CATS[r.cat].n + '</i>' + esc(r.name) + '</div>' +
+      inhalt = '<div class="pm" style="border-left-color:' + CATS[r.cat].c +
+        ';background:' + tintHex(CATS[r.cat].c, .13) + '"><i style="color:' + CATS[r.cat].c + '">' +
+        CATS[r.cat].n + '</i>' + esc(r.name) + '</div>' +
         '<div class="pe">' + r.time + ' Min.' + (r.todo ? "" : " · ca. " + r.kh + " g KH") + '</div>' +
         (r.sub ? '<div class="pn">' + esc(r.sub) + '</div>' : '');
     } else if (f){
@@ -534,6 +594,11 @@ function printEssen(){
     } else {
       inhalt = '<div class="pn">noch frei</div>';
     }
+    if (r2) inhalt += '<div class="pm zweit" style="border-left-color:' + CATS[r2.cat].c +
+      ';background:' + tintHex(CATS[r2.cat].c, .10) + '"><i>Zweites Gericht · ' + CATS[r2.cat].n +
+      '</i>' + esc(r2.name) + '</div>' +
+      '<div class="pe">' + r2.time + ' Min.' + (r2.todo ? "" : " · ca. " + r2.kh + " g KH") + '</div>';
+    else if (f2) inhalt += '<div class="pm zweit"><i>Zweites Gericht</i>' + esc(f2) + '</div>';
     return '<div class="pday"><h4>' + DAYNAME[day] + '</h4><div class="pd">' + fmtD(date) + '</div>' +
       inhalt + '</div>';
   }).join("");
@@ -557,11 +622,14 @@ function printEinkauf(){
 }
 function printRezepte(){
   const w = week(keyOf(cur));
-  const list = DAYS.filter(d => w.days[d]).map(d => byId(w.days[d])).filter(r => r && !r.todo);
+  const list = DAYS.filter(d => w.days[d]).map(d => byId(w.days[d]))
+    .concat(DAYS.filter(d => w.days2[d]).map(d => byId(w.days2[d])))
+    .filter(r => r && !r.todo);
   if (!list.length) return "";
   const port = Number(DB.settings.port);
   return '<div class="psec">' + printHead("Rezepte der Woche") + list.map(r =>
-    '<div class="prec"><h3>' + esc(r.name) + '</h3>' +
+    '<div class="prec" style="border-left:2.5pt solid ' + CATS[r.cat].c + ';padding-left:3mm">' +
+    '<h3 style="color:' + CATS[r.cat].c + '">' + esc(r.name) + '</h3>' +
     '<div class="pd">' + CATS[r.cat].n + ' · ' + r.time + ' Min. · ' + port + ' Portionen</div>' +
     '<div class="pz">' + r.zut.map(z => '<div><span>' + esc(z[0]) + '</span><b>' +
       amount(z[1], z[2], port) + '</b></div>').join("") + '</div>' +
@@ -576,7 +644,7 @@ function initEssen(){
   $("#roll").onclick = rollWeek;
   $("#clearMeals").onclick = () => {
     const w = week(keyOf(cur));
-    w.days = {}; w.free = {}; w.checked = {}; w.buy = {};
+    w.days = {}; w.free = {}; w.days2 = {}; w.free2 = {}; w.checked = {}; w.buy = {};
     save(); renderMeals(); renderShop(); renderCal();
   };
   $("#openKartei").onclick = openKartei;
