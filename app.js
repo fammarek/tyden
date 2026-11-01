@@ -351,13 +351,25 @@ function renderCalPicker(){
   const box = $("#gCals");
   if (!box) return;
   const list = DB.settings.calList || [];
-  if (!list.length){ box.innerHTML = ""; return; }
-  box.innerHTML = '<p class="lbl" style="margin:1rem 0 .4rem">Welche Kalender anzeigen</p>' +
-    list.map((c, i) =>
-      '<label class="chk calrow"><input type="checkbox" data-cal="' + esc(c.id) + '"' +
-      ((DB.settings.cals || []).indexOf(c.id) >= 0 ? " checked" : "") + '>' +
-      '<span class="swatch" style="background:' + esc(c.bg) + '"></span>' +
-      '<span>' + esc(c.name) + '</span></label>').join("");
+  const sel = DB.settings.cals || [];
+  const kopf = '<p class="lbl" style="margin:1.2rem 0 .4rem">Welche Kalender anzeigen</p>';
+  if (!list.length){
+    box.innerHTML = kopf + '<p class="hint">Noch keine Kalender geladen. Verbinde dich mit Google, ' +
+      'dann erscheint hier die Liste deiner Kalender.</p>' +
+      (gToken ? '<button class="btn ghost" id="loadCals">Kalender laden</button>' : '');
+    const btn = $("#loadCals");
+    if (btn) btn.onclick = () => loadGoogleEvents().then(() => { renderCalPicker(); renderCal(); });
+    return;
+  }
+  box.innerHTML = kopf +
+    '<p class="hint">' + sel.length + ' von ' + list.length + ' Kalendern werden angezeigt.</p>' +
+    list.map(c => {
+      const an = sel.indexOf(c.id) >= 0;
+      return '<label class="chk calrow' + (an ? "" : " aus") + '">' +
+        '<input type="checkbox" data-cal="' + esc(c.id) + '"' + (an ? " checked" : "") + '>' +
+        '<span class="swatch" style="background:' + esc(c.bg) + '"></span>' +
+        '<span>' + esc(c.name) + '</span></label>';
+    }).join("");
   $$("#gCals [data-cal]").forEach(cb => cb.onchange = () => {
     const id = cb.dataset.cal;
     let sel = (DB.settings.cals || []).slice();
@@ -365,6 +377,7 @@ function renderCalPicker(){
     else sel = sel.filter(x => x !== id);
     DB.settings.cals = sel;
     save();
+    renderCalPicker();
     loadGoogleEvents().then(renderCal);
   });
 }

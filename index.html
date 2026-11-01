@@ -98,14 +98,24 @@
       <h2>Notizblock</h2>
       <div class="pages" id="notePages"></div>
       <div class="baracts">
+        <div class="modes">
+          <button class="tool on" id="modePen" title="Mit dem Pencil schreiben">&#9998;</button>
+          <button class="tool" id="modeKey" title="Mit der Tastatur schreiben">&#9000;</button>
+        </div>
         <div class="pens" id="pens"></div>
         <button class="tool" id="eraser" title="Radierer">&#9003;</button>
         <button class="tool" id="undo" title="Rückgängig">&#8630;</button>
         <button class="tool" id="clearPage" title="Seite leeren">&#128465;</button>
         <button class="btn ghost" id="addPage">Seite +</button>
+        <button class="btn ghost" id="delPage">Seite entfernen</button>
       </div>
     </div>
-    <div class="canvaswrap"><canvas id="pad"></canvas></div>
+    <div class="canvaswrap">
+      <div class="padstack">
+        <textarea id="padText" class="hinten" spellcheck="false" placeholder="Hier tippen …"></textarea>
+        <canvas id="pad"></canvas>
+      </div>
+    </div>
   </section>
 </main>
 

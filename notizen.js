@@ -1,8 +1,9 @@
 /* ============================================================
    Týden — notizen.js
-   Zeichenfläche für den Apple Pencil.
-   Striche werden als Vektoren je Kalenderwoche und Seite in
-   IndexedDB abgelegt, damit nichts an der Auflösung klebt.
+   Notizblock je Kalenderwoche. Jede Seite trägt zwei Ebenen:
+   getippten Text und handschriftliche Striche. Umschalten
+   entscheidet nur, welche Ebene gerade die Eingabe bekommt.
+   Striche liegen als Vektoren in IndexedDB.
    ============================================================ */
 
 const PENS = [
@@ -11,11 +12,14 @@ const PENS = [
   {c:"#6B2D4E", w:2.2},
   {c:"#E4A93C", w:7.0}
 ];
-let penIdx = 0, eraseMode = false;
-let strokes = [];          // [{c,w,pts:[{x,y,p}]}]
-let notePage = 0;
-let drawing = null;
+const ZEILE = 38;          // Zeilenabstand des Linienrasters
+const SEITE_H = 1700;      // Seitenhöhe, darüber wird gescrollt
+
+let penIdx = 0, eraseMode = false, stiftModus = true;
+let strokes = [], seitenText = "";
+let notePage = 0, drawing = null, usedPen = false;
 let padCtx = null, padDpr = 1;
+let weekPages = [];
 
 /* ---------- IndexedDB ---------- */
 let idb = null;
@@ -29,6 +33,13 @@ function openDb(){
   });
 }
 function pageKey(p){ return keyOf(cur) + "#" + (p === undefined ? notePage : p); }
+
+/* Alte Seiten waren reine Strich-Listen, neue sind Objekte. */
+function normalise(val){
+  if (!val) return {strokes: [], text: ""};
+  if (Array.isArray(val)) return {strokes: val, text: ""};
+  return {strokes: val.strokes || [], text: val.text || ""};
+}
 async function dbGet(key){
   const db = await openDb();
   if (!db) return null;
@@ -41,7 +52,18 @@ async function dbGet(key){
 async function dbPut(key, val){
   const db = await openDb();
   if (!db) return;
-  db.transaction("pages", "readwrite").objectStore("pages").put(val, key);
+  return new Promise(resolve => {
+    const rq = db.transaction("pages", "readwrite").objectStore("pages").put(val, key);
+    rq.onsuccess = rq.onerror = () => resolve();
+  });
+}
+async function dbDel(key){
+  const db = await openDb();
+  if (!db) return;
+  return new Promise(resolve => {
+    const rq = db.transaction("pages", "readwrite").objectStore("pages").delete(key);
+    rq.onsuccess = rq.onerror = () => resolve();
+  });
 }
 async function dbKeys(){
   const db = await openDb();
@@ -52,30 +74,34 @@ async function dbKeys(){
     rq.onerror = () => resolve([]);
   });
 }
+function savePage(){
+  return dbPut(pageKey(), {strokes: strokes, text: seitenText});
+}
 
 /* ---------- Zeichnen ---------- */
 function sizePad(){
   const cv = $("#pad");
   if (!cv || cv.offsetWidth === 0) return;
   padDpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.style.height = SEITE_H + "px";
   cv.width = Math.round(cv.offsetWidth * padDpr);
-  cv.height = Math.round(cv.offsetHeight * padDpr);
+  cv.height = Math.round(SEITE_H * padDpr);
   padCtx = cv.getContext("2d");
-  padCtx.scale(padDpr, padDpr);
+  padCtx.setTransform(padDpr, 0, 0, padDpr, 0, 0);
   redraw();
 }
 function lineRule(ctx, w, h){
   ctx.save();
   ctx.strokeStyle = "rgba(27,42,33,.10)";
   ctx.lineWidth = 1;
-  for (let y = 38; y < h; y += 38){
-    ctx.beginPath(); ctx.moveTo(14, y); ctx.lineTo(w - 14, y); ctx.stroke();
+  for (let y = ZEILE; y < h; y += ZEILE){
+    ctx.beginPath(); ctx.moveTo(14, y + .5); ctx.lineTo(w - 14, y + .5); ctx.stroke();
   }
   ctx.restore();
 }
 function drawStroke(ctx, s){
   const pts = s.pts;
-  if (!pts.length) return;
+  if (!pts || !pts.length) return;
   ctx.strokeStyle = s.c;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -97,7 +123,7 @@ function drawStroke(ctx, s){
 function redraw(){
   const cv = $("#pad");
   if (!padCtx || !cv) return;
-  const w = cv.offsetWidth, h = cv.offsetHeight;
+  const w = cv.offsetWidth, h = SEITE_H;
   padCtx.clearRect(0, 0, w, h);
   lineRule(padCtx, w, h);
   strokes.forEach(s => drawStroke(padCtx, s));
@@ -113,23 +139,36 @@ function posOf(e, cv){
 function hitStroke(s, pt){
   return s.pts.some(p => Math.abs(p.x - pt.x) < 12 && Math.abs(p.y - pt.y) < 12);
 }
-function saveStrokes(){
-  dbPut(pageKey(), strokes);
+
+/* ---------- Umschalten Stift / Tastatur ---------- */
+function setModus(stift){
+  stiftModus = stift;
+  $("#modePen").classList.toggle("on", stift);
+  $("#modeKey").classList.toggle("on", !stift);
+  $("#pad").classList.toggle("hinten", !stift);
+  $("#padText").classList.toggle("hinten", stift);
+  $("#padText").readOnly = stift;
+  // Zeichenwerkzeuge nur im Stiftmodus
+  ["pens","eraser","undo"].forEach(id => {
+    const el = $("#" + id);
+    if (el) el.style.display = stift ? "" : "none";
+  });
+  if (!stift) setTimeout(() => $("#padText").focus(), 50);
 }
 
 function initPad(){
   const cv = $("#pad");
 
   cv.addEventListener("pointerdown", e => {
-    // Handballen und Finger ignorieren, sobald ein Stift im Spiel ist
-    if (e.pointerType === "touch" && usedPen) return;
+    if (!stiftModus) return;
+    if (e.pointerType === "touch" && usedPen) return;   // Handballen und Finger ignorieren
     if (e.pointerType === "pen") usedPen = true;
     cv.setPointerCapture(e.pointerId);
     const pt = posOf(e, cv);
     if (eraseMode){
-      const before = strokes.length;
+      const vorher = strokes.length;
       strokes = strokes.filter(s => !hitStroke(s, pt));
-      if (strokes.length !== before){ redraw(); saveStrokes(); }
+      if (strokes.length !== vorher){ redraw(); savePage(); }
       drawing = "erase";
       return;
     }
@@ -138,13 +177,13 @@ function initPad(){
   });
 
   cv.addEventListener("pointermove", e => {
-    if (!drawing) return;
+    if (!drawing || !stiftModus) return;
     if (e.pointerType === "touch" && usedPen) return;
     const pt = posOf(e, cv);
     if (drawing === "erase"){
-      const before = strokes.length;
+      const vorher = strokes.length;
       strokes = strokes.filter(s => !hitStroke(s, pt));
-      if (strokes.length !== before) redraw();
+      if (strokes.length !== vorher) redraw();
       return;
     }
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
@@ -152,14 +191,20 @@ function initPad(){
     drawStroke(padCtx, {c: drawing.c, w: drawing.w, pts: drawing.pts.slice(-3)});
   });
 
-  const end = () => {
-    if (drawing && drawing !== "erase" && drawing.pts.length) saveStrokes();
-    else if (drawing === "erase") saveStrokes();
-    drawing = null;
+  const ende = () => { if (drawing){ savePage(); drawing = null; } };
+  cv.addEventListener("pointerup", ende);
+  cv.addEventListener("pointercancel", ende);
+  cv.addEventListener("pointerleave", ende);
+
+  const ta = $("#padText");
+  ta.oninput = () => {
+    seitenText = ta.value;
+    clearTimeout(ta._t);
+    ta._t = setTimeout(savePage, 400);
   };
-  cv.addEventListener("pointerup", end);
-  cv.addEventListener("pointercancel", end);
-  cv.addEventListener("pointerleave", end);
+
+  $("#modePen").onclick = () => setModus(true);
+  $("#modeKey").onclick = () => setModus(false);
 
   $("#pens").innerHTML = PENS.map((p, i) =>
     '<button class="pen' + (i === 0 ? " on" : "") + '" data-pen="' + i + '" ' +
@@ -169,76 +214,127 @@ function initPad(){
     eraseMode = false;
     $("#eraser").classList.remove("on");
     $$("#pens .pen").forEach(x => x.classList.toggle("on", x === b));
+    setModus(true);
   });
   $("#eraser").onclick = () => {
     eraseMode = !eraseMode;
     $("#eraser").classList.toggle("on", eraseMode);
+    if (eraseMode) setModus(true);
   };
-  $("#undo").onclick = () => { strokes.pop(); redraw(); saveStrokes(); };
+  $("#undo").onclick = () => { strokes.pop(); redraw(); savePage(); };
+
   $("#clearPage").onclick = () => {
-    if (!strokes.length || !confirm("Diese Seite leeren?")) return;
-    strokes = []; redraw(); saveStrokes();
+    if ((!strokes.length && !seitenText) || !confirm("Inhalt dieser Seite löschen?")) return;
+    strokes = []; seitenText = "";
+    $("#padText").value = "";
+    redraw(); savePage();
   };
+
+  $("#delPage").onclick = deletePage;
+
   $("#addPage").onclick = async () => {
-    const keys = await dbKeys();
-    const mine = keys.filter(k => String(k).startsWith(keyOf(cur) + "#"));
-    notePage = mine.length;
-    strokes = [];
-    await dbPut(pageKey(), []);
-    renderNotes();
+    const seiten = await seitenDerWoche();
+    notePage = seiten.length ? Math.max.apply(null, seiten) + 1 : 0;
+    strokes = []; seitenText = "";
+    await dbPut(pageKey(), {strokes: [], text: ""});
+    await renderNotes();
+    $(".canvaswrap").scrollTop = 0;
   };
+
   window.addEventListener("resize", () => { if (activeTab === "notizen") sizePad(); });
+  setModus(true);
 }
-let usedPen = false;
+
+async function seitenDerWoche(){
+  const keys = await dbKeys();
+  return keys.filter(k => String(k).startsWith(keyOf(cur) + "#"))
+    .map(k => Number(String(k).split("#")[1]))
+    .sort((a, b) => a - b);
+}
+
+/* Seite dauerhaft entfernen und die folgenden nachrücken lassen */
+async function deletePage(){
+  const seiten = await seitenDerWoche();
+  if (seiten.length <= 1){
+    if (!confirm("Das ist die einzige Seite dieser Woche. Inhalt löschen?")) return;
+    strokes = []; seitenText = "";
+    $("#padText").value = "";
+    redraw(); await savePage(); return;
+  }
+  if (!confirm("Seite " + (notePage + 1) + " endgültig entfernen?")) return;
+
+  const inhalte = [];
+  for (const p of seiten){
+    if (p === notePage) continue;
+    inhalte.push(await dbGet(keyOf(cur) + "#" + p));
+  }
+  for (const p of seiten) await dbDel(keyOf(cur) + "#" + p);
+  for (let i = 0; i < inhalte.length; i++) await dbPut(keyOf(cur) + "#" + i, inhalte[i]);
+
+  notePage = Math.max(0, notePage - 1);
+  await renderNotes();
+  toast("Seite entfernt");
+}
 
 async function renderNotes(){
-  const keys = await dbKeys();
-  const mine = keys.filter(k => String(k).startsWith(keyOf(cur) + "#"))
-    .map(k => Number(String(k).split("#")[1])).sort((a, b) => a - b);
-  const pages = mine.length ? mine : [0];
-  if (pages.indexOf(notePage) < 0) notePage = pages[0];
+  const vorhanden = await seitenDerWoche();
+  const seiten = vorhanden.length ? vorhanden : [0];
+  if (seiten.indexOf(notePage) < 0) notePage = seiten[0];
 
-  $("#notePages").innerHTML = pages.map(p =>
+  $("#notePages").innerHTML = seiten.map(p =>
     '<button data-page="' + p + '"' + (p === notePage ? ' class="on"' : '') + '>Seite ' + (p + 1) + '</button>').join("");
   $$("#notePages button").forEach(b => b.onclick = async () => {
     notePage = Number(b.dataset.page);
-    strokes = (await dbGet(pageKey())) || [];
+    await ladeSeite();
     renderNotes();
+    $(".canvaswrap").scrollTop = 0;
   });
 
-  strokes = (await dbGet(pageKey())) || [];
+  await ladeSeite();
 
   // alle Seiten der Woche für den Druck vorhalten
   weekPages = [];
-  for (const p of pages) weekPages.push({page: p, strokes: (await dbGet(pageKey(p))) || []});
-
+  for (const p of seiten){
+    const d = normalise(await dbGet(keyOf(cur) + "#" + p));
+    weekPages.push({page: p, strokes: d.strokes, text: d.text});
+  }
   if (activeTab === "notizen") sizePad(); else redraw();
 }
-let weekPages = [];
-
-function strokeBounds(list){
-  let w = 1000, h = 700;
-  list.forEach(s => s.pts.forEach(p => { if (p.x > w) w = p.x; if (p.y > h) h = p.y; }));
-  return {w: Math.ceil(w + 20), h: Math.ceil(h + 20)};
+async function ladeSeite(){
+  const d = normalise(await dbGet(pageKey()));
+  strokes = d.strokes;
+  seitenText = d.text;
+  const ta = $("#padText");
+  if (ta) ta.value = seitenText;
 }
 
 /* ---------- Druck ---------- */
+function strokeBounds(list){
+  let w = 900, h = 400;
+  list.forEach(s => s.pts.forEach(p => { if (p.x > w) w = p.x; if (p.y > h) h = p.y; }));
+  return {w: Math.ceil(w + 20), h: Math.ceil(h + 40)};
+}
 function printNotizen(){
-  const seiten = weekPages.filter(p => p.strokes && p.strokes.length);
+  const seiten = weekPages.filter(p => (p.strokes && p.strokes.length) || (p.text && p.text.trim()));
   if (!seiten.length) return "";
   const cv = $("#pad");
   return seiten.map(seite => {
-    const b = strokeBounds(seite.strokes);
-    const w = Math.max(b.w, (cv && cv.offsetWidth) || 0, 900);
-    const h = Math.max(b.h, 600);
-    const out = document.createElement("canvas");
-    out.width = w * 2; out.height = h * 2;
-    const ctx = out.getContext("2d");
-    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out.width, out.height);
-    ctx.scale(2, 2);
-    lineRule(ctx, w, h);
-    seite.strokes.forEach(s => drawStroke(ctx, s));
-    return '<div class="psec">' + printHead("Notizen — Seite " + (seite.page + 1)) +
-      '<img class="pimg" src="' + out.toDataURL("image/png") + '"></div>';
+    let bild = "";
+    if (seite.strokes && seite.strokes.length){
+      const b = strokeBounds(seite.strokes);
+      const w = Math.max(b.w, (cv && cv.offsetWidth) || 0, 900);
+      const h = Math.min(b.h, SEITE_H);
+      const out = document.createElement("canvas");
+      out.width = w * 2; out.height = h * 2;
+      const ctx = out.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out.width, out.height);
+      ctx.scale(2, 2);
+      lineRule(ctx, w, h);
+      seite.strokes.forEach(s => drawStroke(ctx, s));
+      bild = '<img class="pimg" src="' + out.toDataURL("image/png") + '">';
+    }
+    const text = (seite.text && seite.text.trim())
+      ? '<div class="ptext">' + esc(seite.text) + '</div>' : "";
+    return '<div class="psec">' + printHead("Notizen — Seite " + (seite.page + 1)) + text + bild + '</div>';
   }).join("");
 }
