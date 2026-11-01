@@ -435,6 +435,32 @@ function doPrint(){
   setTimeout(() => window.print(), 120);
 }
 
+/* ---------- Aktualisieren ---------- */
+let refreshLaeuft = false;
+async function refreshAll(laut){
+  if (refreshLaeuft) return;
+  refreshLaeuft = true;
+  const btn = $("#refresh");
+  if (btn) btn.classList.add("spin");
+  try {
+    if (DB.settings.clientId){
+      if (!gToken) await gSilent();
+      else await loadGoogleEvents();
+    }
+    renderAll();
+    if (laut) toast(gToken ? "Termine aktualisiert" : "Keine Verbindung zu Google");
+  } catch(e){
+    if (laut) toast("Aktualisieren fehlgeschlagen");
+  } finally {
+    // nach neuer Fassung der App schauen
+    if ("serviceWorker" in navigator && navigator.serviceWorker.getRegistration){
+      navigator.serviceWorker.getRegistration().then(r => { if (r) r.update(); }).catch(() => {});
+    }
+    setTimeout(() => { if (btn) btn.classList.remove("spin"); }, 600);
+    refreshLaeuft = false;
+  }
+}
+
 /* ---------- Sicherung ---------- */
 function download(name, text, type){
   const blob = new Blob([text], {type: type || "text/plain;charset=utf-8"});
@@ -455,6 +481,11 @@ function start(){
   $("#today").onclick = () => { cur = isoWeek(new Date()); renderAll(); if (gToken) loadGoogleEvents().then(renderCal); };
   $$(".tab").forEach(t => t.onclick = () => setTab(t.dataset.tab));
 
+  $("#refresh").onclick = () => refreshAll(true);
+  // beim Zurückholen aus dem Hintergrund still nachladen
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && DB.settings.clientId) refreshAll(false);
+  });
   $("#openPrint").onclick = () => { $("#printKw").textContent = "KW " + cur.week; $("#dPrint").showModal(); };
   $("#doPrint").onclick = doPrint;
 

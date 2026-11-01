@@ -319,3 +319,8 @@ html[data-season="winter"]{
   .pe{border-left-width:1.6pt!important}
   .pband{background:#F4F4EF;border-radius:0 1mm 1mm 0}
 }
+
+/* Aktualisieren */
+#refresh{font-size:1.05rem;line-height:1;padding:.42rem .75rem}
+#refresh.spin{animation:drehen .7s linear infinite}
+@keyframes drehen{to{transform:rotate(360deg)}}

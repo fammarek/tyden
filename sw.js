@@ -1,9 +1,10 @@
 /* Týden — Service Worker
-   Hält die App offline lauffähig. Anfragen an Google und Anthropic
-   gehen immer direkt ins Netz und werden nie zwischengespeichert. */
-const CACHE = "tyden-v1";
+   Netz zuerst, Zwischenspeicher als Rückfall. So bekommst du Aktualisierungen
+   sofort und die App läuft trotzdem offline weiter.
+   Anfragen an Google und Anthropic gehen immer direkt ins Netz. */
+const CACHE = "tyden-v2";
 const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./essen.js",
-               "./notizen.js", "./claude.js", "./rezepte.js",
+               "./notizen.js", "./claude.js", "./rezepte.js", "./datenschutz.html",
                "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -11,19 +12,22 @@ self.addEventListener("install", e => {
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks =>
-    Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+    Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET") return;
   if (/googleapis|accounts\.google|anthropic|jina/.test(url.hostname)) return;
+  if (url.origin !== location.origin) return;
+
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      if (res.ok && url.origin === location.origin){
+    fetch(e.request).then(res => {
+      if (res && res.ok){
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
       }
       return res;
-    }).catch(() => hit))
+    }).catch(() => caches.match(e.request).then(hit => hit || caches.match("./index.html")))
   );
 });
