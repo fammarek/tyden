@@ -7,7 +7,7 @@
 
 const K_API = "tyden.anthropic.key";
 const K_MODEL = "tyden.anthropic.model";
-const MODEL_STD = "claude-sonnet-4-5";
+const MODEL_STD = "claude-sonnet-4-5-20250929";
 
 function apiKey(){ try { return localStorage.getItem(K_API) || ""; } catch(e){ return ""; } }
 function setApiKey(k){ try { k ? localStorage.setItem(K_API, k) : localStorage.removeItem(K_API); } catch(e){} }
@@ -41,7 +41,7 @@ const REGELN = `Regeln:
 function klartext(status, typ, text){
   if (status === 401) return "Der Schlüssel wird nicht akzeptiert. Meist ist er unvollständig kopiert oder in der Konsole wieder gelöscht worden.";
   if (status === 400 && /credit|balance/i.test(text)) return "Das Guthaben im Anthropic-Konto reicht nicht. Unter Billing aufladen.";
-  if (status === 404) return "Dieses Modell gibt es unter dem Namen nicht. Unten im Feld Modell einen anderen Namen eintragen.";
+  if (status === 404) return "Diesen Modellnamen kennt die Schnittstelle nicht. Trage unten im Feld Modell die vollständige Bezeichnung mit Datum ein, etwa claude-sonnet-4-5-20250929.";
   if (status === 429) return "Zu viele Anfragen in kurzer Zeit. Kurz warten und erneut versuchen.";
   if (status === 529 || status === 503) return "Der Dienst ist gerade überlastet. In ein paar Minuten noch einmal versuchen.";
   if (typ === "network") return "Keine Verbindung zur Anthropic-Schnittstelle. Entweder fehlt das Netz, oder ein Inhaltsblocker im Browser hält die Anfrage auf.";
