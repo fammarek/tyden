@@ -110,10 +110,17 @@
         <button class="btn ghost" id="delPage">Seite entfernen</button>
       </div>
     </div>
-    <div class="canvaswrap">
-      <div class="padstack">
-        <textarea id="padText" class="hinten" spellcheck="false" placeholder="Hier tippen …"></textarea>
-        <canvas id="pad"></canvas>
+    <div class="canvasrow">
+      <div class="canvaswrap">
+        <div class="padstack">
+          <textarea id="padText" class="hinten" spellcheck="false" placeholder="Hier tippen …"></textarea>
+          <canvas id="pad"></canvas>
+        </div>
+      </div>
+      <div class="padscroll">
+        <button class="tool" id="scrollUp" aria-label="nach oben">&#9650;</button>
+        <div class="track" id="scrollTrack"><div class="thumb" id="scrollThumb"></div></div>
+        <button class="tool" id="scrollDown" aria-label="nach unten">&#9660;</button>
       </div>
     </div>
   </section>
@@ -241,10 +248,17 @@
     <hr>
     <h3>Zugang</h3>
     <div class="field"><label class="lbl">Anthropic API-Schlüssel</label>
-      <input id="apiKey" type="password" placeholder="sk-ant-…"></div>
-    <p class="hint">Bleibt nur auf diesem Gerät im Browser gespeichert. Niemals ins Repository legen.
-      Die Anleitung steht in der README.</p>
-    <div class="baracts"><button class="btn ghost" id="saveKey">Schlüssel speichern</button></div>
+      <input id="apiKey" type="password" autocomplete="off" autocapitalize="off"
+             autocorrect="off" spellcheck="false" placeholder="sk-ant-…"></div>
+    <div class="field"><label class="lbl">Modell</label>
+      <input id="apiModel" autocapitalize="off" autocorrect="off" spellcheck="false"
+             placeholder="claude-sonnet-4-5"></div>
+    <p class="hint">Der Schlüssel bleibt nur auf diesem Gerät im Browser gespeichert und gehört nicht
+      ins Repository. Achte beim Einfügen darauf, dass kein Leerzeichen mitkommt.</p>
+    <div class="baracts">
+      <button class="btn" id="testKey">Verbindung prüfen</button>
+      <button class="btn ghost" id="saveKey">Speichern</button>
+    </div>
   </div>
 </div></dialog>
 

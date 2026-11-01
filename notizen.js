@@ -89,6 +89,7 @@ function sizePad(){
   padCtx = cv.getContext("2d");
   padCtx.setTransform(padDpr, 0, 0, padDpr, 0, 0);
   redraw();
+  if (padSync) padSync();
 }
 function lineRule(ctx, w, h){
   ctx.save();
@@ -241,9 +242,62 @@ function initPad(){
     $(".canvaswrap").scrollTop = 0;
   };
 
+  initScrollbar();
   window.addEventListener("resize", () => { if (activeTab === "notizen") sizePad(); });
   setModus(true);
 }
+
+/* ---------- Eigener Scrollbalken ----------
+   Die Schreibfläche selbst reagiert nicht mehr auf Wischgesten, damit der Stift
+   nicht mit dem Scrollen in Konflikt gerät. Gescrollt wird hier. */
+function initScrollbar(){
+  const wrap = $(".canvaswrap");
+  const track = $("#scrollTrack");
+  const thumb = $("#scrollThumb");
+  if (!wrap || !track || !thumb) return;
+
+  function syncThumb(){
+    const sichtbar = wrap.clientHeight, gesamt = wrap.scrollHeight;
+    const anteil = Math.min(1, sichtbar / gesamt);
+    const bahn = track.clientHeight;
+    const hoehe = Math.max(36, bahn * anteil);
+    const weg = bahn - hoehe;
+    const pos = gesamt - sichtbar > 0 ? (wrap.scrollTop / (gesamt - sichtbar)) * weg : 0;
+    thumb.style.height = hoehe + "px";
+    thumb.style.top = pos + "px";
+  }
+  function scrollZu(clientY){
+    const r = track.getBoundingClientRect();
+    const hoehe = thumb.offsetHeight;
+    const anteil = (clientY - r.top - hoehe / 2) / Math.max(1, r.height - hoehe);
+    wrap.scrollTop = Math.max(0, Math.min(1, anteil)) * (wrap.scrollHeight - wrap.clientHeight);
+    syncThumb();
+  }
+
+  let zieht = false;
+  track.addEventListener("pointerdown", e => {
+    zieht = true;
+    track.setPointerCapture(e.pointerId);
+    scrollZu(e.clientY);
+  });
+  track.addEventListener("pointermove", e => { if (zieht) scrollZu(e.clientY); });
+  const los = () => { zieht = false; };
+  track.addEventListener("pointerup", los);
+  track.addEventListener("pointercancel", los);
+
+  const sprung = richtung => {
+    wrap.scrollBy({top: richtung * wrap.clientHeight * 0.8, behavior: "smooth"});
+    setTimeout(syncThumb, 350);
+  };
+  $("#scrollUp").onclick = () => sprung(-1);
+  $("#scrollDown").onclick = () => sprung(1);
+
+  wrap.addEventListener("scroll", syncThumb, {passive: true});
+  window.addEventListener("resize", syncThumb);
+  padSync = syncThumb;
+  syncThumb();
+}
+let padSync = null;
 
 async function seitenDerWoche(){
   const keys = await dbKeys();

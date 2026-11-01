@@ -350,3 +350,29 @@ html[data-season="winter"]{
 @media print{
   .ptext{white-space:pre-wrap;font-size:10.5pt;line-height:1.5;margin-bottom:5mm}
 }
+
+/* ---------- Notizblock: eigener Scrollbalken ---------- */
+.canvasrow{display:flex;gap:.5rem;align-items:stretch}
+.canvasrow .canvaswrap{flex:1;min-width:0;scrollbar-width:none}
+.canvasrow .canvaswrap::-webkit-scrollbar{display:none}
+.padscroll{width:2.4rem;flex:none;display:flex;flex-direction:column;gap:.4rem;
+  height:calc(100vh - var(--head) - 9.5rem)}
+.padscroll .tool{width:2.4rem;height:2.4rem;font-size:.7rem}
+.padscroll .track{flex:1;background:rgba(27,42,33,.07);border-radius:999px;position:relative;
+  touch-action:none;cursor:grab}
+.padscroll .thumb{position:absolute;left:3px;right:3px;top:0;height:28%;
+  background:var(--pine);border-radius:999px;opacity:.8}
+.padscroll .track:active{cursor:grabbing}
+/* Die Schreibfläche nimmt keine Wischgesten mehr an, damit der Stift sauber schreibt */
+#pad{touch-action:none}
+
+/* ---------- Fehleranzeige Claude ---------- */
+.aistatus.fehler{background:#FBEAE5;border:1px solid #D9705A;color:#7A2E1C;
+  border-radius:9px;padding:.7rem .85rem}
+.aistatus.gut{background:rgba(71,117,90,.15);border:1px solid var(--leaf);
+  border-radius:9px;padding:.7rem .85rem;color:var(--ink)}
+.aistatus pre{white-space:pre-wrap;word-break:break-word;font-size:.8rem;line-height:1.45;
+  margin:.35rem 0;font-family:ui-monospace,Menlo,monospace}
+.aistatus details{margin-top:.4rem}
+.aistatus summary{cursor:pointer;font-size:.8rem}
+.aistatus b{font-size:.95rem}

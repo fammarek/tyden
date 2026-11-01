@@ -6,10 +6,16 @@
    ============================================================ */
 
 const K_API = "tyden.anthropic.key";
-const MODEL = "claude-sonnet-4-5";
+const K_MODEL = "tyden.anthropic.model";
+const MODEL_STD = "claude-sonnet-4-5";
 
 function apiKey(){ try { return localStorage.getItem(K_API) || ""; } catch(e){ return ""; } }
 function setApiKey(k){ try { k ? localStorage.setItem(K_API, k) : localStorage.removeItem(K_API); } catch(e){} }
+function modell(){ try { return localStorage.getItem(K_MODEL) || MODEL_STD; } catch(e){ return MODEL_STD; } }
+function setModell(m){ try { localStorage.setItem(K_MODEL, m || MODEL_STD); } catch(e){} }
+
+/* Letzte Antwort im Rohzustand, damit sich Fehler nachvollziehen lassen */
+let letzteAntwort = "";
 
 const SCHEMA = `{
   "name": "Name des Gerichts",
@@ -32,29 +38,65 @@ const REGELN = `Regeln:
 - Schritte knapp und in ganzen Sätzen, höchstens sieben Stück, deutsch.
 - Antworte ausschließlich mit dem JSON, ohne Fließtext und ohne Codeblock.`;
 
+function klartext(status, typ, text){
+  if (status === 401) return "Der Schlüssel wird nicht akzeptiert. Meist ist er unvollständig kopiert oder in der Konsole wieder gelöscht worden.";
+  if (status === 400 && /credit|balance/i.test(text)) return "Das Guthaben im Anthropic-Konto reicht nicht. Unter Billing aufladen.";
+  if (status === 404) return "Dieses Modell gibt es unter dem Namen nicht. Unten im Feld Modell einen anderen Namen eintragen.";
+  if (status === 429) return "Zu viele Anfragen in kurzer Zeit. Kurz warten und erneut versuchen.";
+  if (status === 529 || status === 503) return "Der Dienst ist gerade überlastet. In ein paar Minuten noch einmal versuchen.";
+  if (typ === "network") return "Keine Verbindung zur Anthropic-Schnittstelle. Entweder fehlt das Netz, oder ein Inhaltsblocker im Browser hält die Anfrage auf.";
+  return "";
+}
 async function askClaude(content, maxTokens){
   const key = apiKey();
-  if (!key) throw new Error("Kein API-Schlüssel hinterlegt. Einstellungen öffnen.");
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens || 2000,
-      messages: [{role: "user", content: content}]
-    })
-  });
-  if (!r.ok){
-    let msg = "HTTP " + r.status;
-    try { const e = await r.json(); if (e.error && e.error.message) msg = e.error.message; } catch(err){}
-    throw new Error(msg);
+  if (!key) throw new Error("Kein API-Schlüssel hinterlegt — weiter unten im Abschnitt Zugang eintragen.");
+
+  let r;
+  try {
+    r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: modell(),
+        max_tokens: maxTokens || 2000,
+        messages: [{role: "user", content: content}]
+      })
+    });
+  } catch(netz){
+    letzteAntwort = "Netzwerkfehler: " + netz.message;
+    const err = new Error(klartext(0, "network", "") + " (" + netz.message + ")");
+    err.roh = letzteAntwort;
+    throw err;
   }
-  const d = await r.json();
+
+  const rohtext = await r.text();
+  letzteAntwort = "HTTP " + r.status + " " + r.statusText + "\n\n" + rohtext;
+
+  if (!r.ok){
+    let typ = "", msg = "";
+    try {
+      const e = JSON.parse(rohtext);
+      if (e.error){ typ = e.error.type || ""; msg = e.error.message || ""; }
+    } catch(x){}
+    const hinweis = klartext(r.status, typ, rohtext);
+    const err = new Error("HTTP " + r.status + (typ ? " · " + typ : "") +
+      (msg ? "\n" + msg : "") + (hinweis ? "\n\n" + hinweis : ""));
+    err.roh = letzteAntwort;
+    throw err;
+  }
+
+  let d;
+  try { d = JSON.parse(rohtext); }
+  catch(x){
+    const err = new Error("Die Antwort war kein gültiges JSON.");
+    err.roh = letzteAntwort;
+    throw err;
+  }
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
 }
 function parseJson(text){
@@ -142,9 +184,27 @@ async function suggestFromStock(stockText, photos){
 /* ---------- Oberfläche ---------- */
 function initClaude(){
   $("#apiKey").value = apiKey();
+  $("#apiModel").value = modell();
   $("#saveKey").onclick = () => {
-    setApiKey($("#apiKey").value.trim());
-    toast(apiKey() ? "Schlüssel gespeichert" : "Schlüssel entfernt");
+    const k = $("#apiKey").value.trim();
+    setApiKey(k);
+    setModell($("#apiModel").value.trim());
+    if (k && !/^sk-ant-/.test(k)){
+      aiError("Der Schlüssel sieht ungewöhnlich aus — er beginnt normalerweise mit sk-ant-. " +
+              "Gespeichert ist er trotzdem.", "");
+    } else {
+      aiDone();
+    }
+    toast(k ? "Gespeichert" : "Schlüssel entfernt");
+  };
+  $("#testKey").onclick = async () => {
+    aiBusy("Verbindung wird geprüft …");
+    try {
+      const antwort = await askClaude([{type:"text", text:"Antworte nur mit dem Wort: bereit"}], 20);
+      aiDone();
+      $("#aiStatus").className = "aistatus gut";
+      $("#aiStatus").textContent = "Verbindung steht. Antwort: " + antwort.trim();
+    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
   };
 
   $("#fromPhoto").onclick = () => $("#photoFile").click();
@@ -159,7 +219,7 @@ function initClaude(){
       $("#dKI").close();
       openEditor(null, dish);
       toast("Rezept erkannt — bitte prüfen");
-    } catch(e){ aiError(e.message); }
+    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
   };
 
   $("#fromLink").onclick = async () => {
@@ -172,7 +232,7 @@ function initClaude(){
       $("#dKI").close();
       openEditor(null, dish);
       toast("Rezept erkannt — bitte prüfen");
-    } catch(e){ aiError(e.message); }
+    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
   };
 
   $("#stockPhoto").onclick = () => $("#stockFile").click();
@@ -202,9 +262,9 @@ function initClaude(){
         try {
           const dish = await recipeFromText("Schreibe ein Rezept für: " + b.dataset.new);
           aiDone(); $("#dKI").close(); openEditor(null, dish);
-        } catch(e){ aiError(e.message); }
+        } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
       });
-    } catch(e){ aiError(e.message); }
+    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
   };
 
   $("#openKI").onclick = () => {
@@ -214,6 +274,24 @@ function initClaude(){
   };
 }
 let stockPhotos = [];
-function aiBusy(t){ $("#aiStatus").textContent = t; $("#aiStatus").classList.add("busy"); }
-function aiDone(){ $("#aiStatus").textContent = ""; $("#aiStatus").classList.remove("busy"); }
-function aiError(m){ $("#aiStatus").classList.remove("busy"); $("#aiStatus").textContent = "Fehler: " + m; }
+function aiBusy(t){
+  const el = $("#aiStatus");
+  el.className = "aistatus busy";
+  el.textContent = t;
+}
+function aiDone(){
+  const el = $("#aiStatus");
+  el.className = "aistatus";
+  el.textContent = "";
+}
+function aiError(m, roh){
+  const el = $("#aiStatus");
+  el.className = "aistatus fehler";
+  el.innerHTML = '<b>Es hat nicht geklappt</b><pre>' + esc(m) + '</pre>' +
+    (roh ? '<details><summary>Vollständige Antwort des Servers</summary><pre>' +
+      esc(String(roh).slice(0, 4000)) + '</pre></details>' +
+      '<button class="mini" id="copyErr">Fehlertext kopieren</button>' : '');
+  const btn = $("#copyErr");
+  if (btn) btn.onclick = () => navigator.clipboard.writeText(String(roh)).then(
+    () => toast("Fehlertext kopiert"), () => toast("Kopieren nicht möglich"));
+}
