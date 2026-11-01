@@ -209,15 +209,13 @@ function loadGis(){
     document.head.appendChild(s);
   });
 }
-async function gConnect(){
-  const id = ($("#gClientId").value || "").trim();
-  if (!id){ gStatus("Bitte zuerst eine Client-ID eintragen."); return; }
-  DB.settings.clientId = id; save();
-  try {
-    await loadGis();
-  } catch(e){
-    gStatus("Google ist gerade nicht erreichbar. Ohne Netz bleibt der Rest der App nutzbar.");
-    return;
+/* Einmal einrichten, danach leise erneuern, solange die Google-Sitzung im Browser steht. */
+async function gInit(id){
+  if (gTokenClient) return true;
+  try { await loadGis(); }
+  catch(e){
+    gStatus("Google ist gerade nicht erreichbar. Der Rest der App läuft weiter.");
+    return false;
   }
   gTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: id,
@@ -225,26 +223,51 @@ async function gConnect(){
     callback: resp => {
       if (resp && resp.access_token){
         gToken = resp.access_token;
-        sessionStorage.setItem("tyden.gtoken", gToken);
+        try { localStorage.setItem("tyden.gtoken", JSON.stringify({
+          t: gToken, exp: Date.now() + (Number(resp.expires_in || 3600) - 120) * 1000
+        })); } catch(e){}
         gStatus("Verbunden. Termine werden geladen.", true);
-        loadGoogleEvents().then(() => { renderCal(); toast("Google-Termine geladen"); });
-      } else {
+        loadGoogleEvents().then(renderCal);
+      } else if (!gQuiet){
         gStatus("Anmeldung abgebrochen.");
       }
+      gQuiet = false;
+    },
+    error_callback: () => {
+      // Stille Anmeldung nicht möglich: Google-Sitzung fehlt oder Zugang abgelaufen
+      if (gQuiet) gStatus("Bitte einmal auf „Mit Google verbinden“ tippen.");
+      gQuiet = false;
     }
   });
-  gTokenClient.requestAccessToken();
+  return true;
 }
+async function gConnect(){
+  const id = ($("#gClientId").value || DB.settings.clientId || "").trim();
+  if (!id){ gStatus("Bitte zuerst eine Client-ID eintragen."); return; }
+  DB.settings.clientId = id; save();
+  if (!(await gInit(id))) return;
+  gQuiet = false;
+  gTokenClient.requestAccessToken({prompt: "consent"});
+}
+/* Holt im Hintergrund ein frisches Zugriffstoken, ohne Fenster und ohne Klick. */
+async function gSilent(){
+  const id = DB.settings.clientId;
+  if (!id) return;
+  if (!(await gInit(id))) return;
+  gQuiet = true;
+  try { gTokenClient.requestAccessToken({prompt: ""}); } catch(e){ gQuiet = false; }
+}
+let gQuiet = false;
 function gDisconnect(){
   gToken = null;
   GOOGLE_EVENTS = [];
-  sessionStorage.removeItem("tyden.gtoken");
+  try { localStorage.removeItem("tyden.gtoken"); } catch(e){}
   gStatus("Getrennt. Es werden keine Google-Termine angezeigt.");
   renderCal();
 }
 async function gFetch(url){
   const r = await fetch(url, {headers: {Authorization: "Bearer " + gToken}});
-  if (r.status === 401){ gToken = null; throw new Error("Anmeldung abgelaufen"); }
+  if (r.status === 401){ gToken = null; gSilent(); throw new Error("Zugang erneuert sich gerade"); }
   if (!r.ok) throw new Error("Google antwortet mit " + r.status);
   return r.json();
 }
@@ -408,8 +431,20 @@ function start(){
   initClaude();
   renderAll();
 
-  const tok = sessionStorage.getItem("tyden.gtoken");
-  if (tok && DB.settings.clientId){ gToken = tok; loadGoogleEvents().then(renderCal); }
+  // gespeichertes Token weiterverwenden, sonst still ein neues holen
+  if (DB.settings.clientId){
+    let gespeichert = null;
+    try { gespeichert = JSON.parse(localStorage.getItem("tyden.gtoken") || "null"); } catch(e){}
+    if (gespeichert && gespeichert.exp > Date.now()){
+      gToken = gespeichert.t;
+      loadGoogleEvents().then(renderCal);
+      setTimeout(gSilent, Math.max(5000, gespeichert.exp - Date.now()));
+    } else {
+      gSilent();
+    }
+    // stündlich leise nachfassen, damit der Zugang nie abläuft
+    setInterval(gSilent, 50 * 60 * 1000);
+  }
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
     navigator.serviceWorker.register("sw.js").catch(() => {});
