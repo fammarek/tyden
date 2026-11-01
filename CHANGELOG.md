@@ -9,6 +9,31 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.4 — 1. November 2026
+
+**Neu**
+- Eigener Tab "Notizen" für dauerhafte Punkte, unabhängig von der Kalenderwoche.
+  Jede Zeile hat ein Kontrollkästchen, abgehakte Punkte lassen sich ausblenden
+  oder gesammelt entfernen. Mehrere Zeilen auf einmal eingetippt werden zu
+  mehreren Punkten, und "Foto abschreiben" füllt die Liste aus einem Zettel.
+- Diese Notizen liegen auf benennbaren Seiten, etwa "Allgemein" und "Haus & Garten".
+  Seiten lassen sich anlegen, umbenennen und entfernen; die Reiter zeigen, wie viele
+  Punkte je Seite offen sind.
+- Der Ausdruck führt alle Seiten untereinander auf, erledigte Punkte abgesetzt und
+  durchgestrichen.
+
+**Geändert**
+- Beim Abfotografieren liest Claude jetzt spaltenweise: erst die linke Spalte von
+  oben nach unten, dann die nächste, bis zur rechten. Alles landet untereinander
+  in einer Liste statt nebeneinander.
+
+**Geändert**
+- Der bisherige Notizblock heißt jetzt "Wochennotizen", weil er an der
+  Kalenderwoche hängt. Damit gibt es vier Tabs: Woche, Einkauf, Wochennotizen,
+  Notizen.
+
+---
+
 ## v0.3.5 — 1. November 2026
 
 **Geändert**

@@ -235,7 +235,7 @@ function initPad(){
 
   $("#notePhoto").onclick = () => {
     if (typeof apiKey === "function" && !apiKey()){
-      toast("Kein API-Schlüssel — im Tab Essen unter „Mit Claude“ eintragen");
+      toast("Kein API-Schlüssel — im Tab Woche unter „Mit Claude“ eintragen");
       return;
     }
     $("#noteFile").click();
@@ -272,7 +272,7 @@ function initPad(){
   };
 
   initScrollbar();
-  window.addEventListener("resize", () => { if (activeTab === "notizen") sizePad(); });
+  window.addEventListener("resize", () => { if (activeTab === "wochennotizen") sizePad(); });
   setModus(true);
 }
 
@@ -388,7 +388,7 @@ async function renderNotes(){
     const d = normalise(await dbGet(keyOf(cur) + "#" + p));
     weekPages.push({page: p, strokes: d.strokes, text: d.text});
   }
-  if (activeTab === "notizen") sizePad(); else redraw();
+  if (activeTab === "wochennotizen") sizePad(); else redraw();
 }
 async function ladeSeite(){
   const d = normalise(await dbGet(pageKey()));

@@ -39,6 +39,7 @@
   <nav class="tabs" id="tabs">
     <button class="tab on" data-tab="woche">Woche</button>
     <button class="tab" data-tab="einkauf">Einkauf</button>
+    <button class="tab" data-tab="wochennotizen">Wochennotizen</button>
     <button class="tab" data-tab="notizen">Notizen</button>
   </nav>
 </header>
@@ -89,9 +90,9 @@
   </section>
 
   <!-- ---------- Notizen ---------- -->
-  <section class="view hidden" id="view-notizen">
+  <section class="view hidden" id="view-wochennotizen">
     <div class="bar">
-      <h2>Notizblock</h2>
+      <h2>Wochennotizen</h2>
       <div class="pages" id="notePages"></div>
       <span class="notestatus" id="noteStatus"></span>
       <div class="baracts">
@@ -123,6 +124,33 @@
       </div>
     </div>
   </section>
+
+  <!-- ---------- Dauerhafte Notizen ---------- -->
+  <section class="view hidden" id="view-notizen">
+    <div class="bar">
+      <h2>Notizen</h2>
+      <div class="barcats" id="todoStats"></div>
+      <div class="pages" id="todoPages"></div>
+      <div class="baracts">
+        <button class="btn ghost" id="todoPageAdd">Seite +</button>
+        <button class="btn ghost" id="todoPageRename">Umbenennen</button>
+        <button class="btn ghost" id="todoPageDel">Seite entfernen</button>
+        <button class="btn ghost" id="todoPhoto">Foto abschreiben</button>
+        <input type="file" id="todoFile" accept="image/*" capture="environment" multiple hidden>
+        <button class="btn ghost" id="todoHide">Erledigte ausblenden</button>
+        <button class="btn ghost" id="todoClearDone">Erledigte entfernen</button>
+        <span class="notestatus" id="todoStatus"></span>
+      </div>
+    </div>
+    <div class="sheetbox todobox">
+      <div class="todoadd">
+        <textarea id="todoInput" rows="1" placeholder="Punkt eintragen, mehrere Zeilen werden zu mehreren Punkten"></textarea>
+        <button class="btn" id="todoAdd">Hinzufügen</button>
+      </div>
+      <div id="todoList"></div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ---------- Dialoge ---------- -->
@@ -277,7 +305,8 @@
     <label class="chk big"><input type="checkbox" id="pr_wochenplan" checked> Wochenplan mit Terminen</label>
     <label class="chk big"><input type="checkbox" id="pr_essen" checked> Essensplan</label>
     <label class="chk big"><input type="checkbox" id="pr_einkauf" checked> Einkaufsliste</label>
-    <label class="chk big"><input type="checkbox" id="pr_notizen"> Notizen</label>
+    <label class="chk big"><input type="checkbox" id="pr_notizen"> Wochennotizen</label>
+    <label class="chk big"><input type="checkbox" id="pr_todos"> Notizen, dauerhaft</label>
     <label class="chk big"><input type="checkbox" id="pr_rezepte"> Rezepte der Woche, ausführlich</label>
   </div>
   <div class="sfoot">
@@ -332,6 +361,7 @@
 <script src="app.js"></script>
 <script src="essen.js"></script>
 <script src="notizen.js"></script>
+<script src="notizen-fest.js"></script>
 <script src="claude.js"></script>
 <script>start();</script>
 </body>

@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.3.5";
+const VERSION = "0.4";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
@@ -403,7 +403,7 @@ function setTab(name){
   activeTab = name;
   $$(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === name));
   $$(".view").forEach(v => v.classList.toggle("hidden", v.id !== "view-" + name));
-  if (name === "notizen") sizePad();
+  if (name === "wochennotizen") sizePad();
   window.scrollTo({top: 0});
   if (seitenSync) setTimeout(seitenSync, 60);
 }
@@ -419,6 +419,7 @@ function renderAll(){
   renderMeals();
   renderShop();
   renderNotes();
+  renderTodos();
   if (seitenSync) setTimeout(seitenSync, 60);
 }
 function gotoWeek(delta){
@@ -472,6 +473,7 @@ function doPrint(){
   if ($("#pr_einkauf").checked)    parts.push(printEinkauf());
   if ($("#pr_rezepte").checked)    parts.push(printRezepte());
   if ($("#pr_notizen").checked)    parts.push(printNotizen());
+  if ($("#pr_todos").checked)      parts.push(printTodos());
   if (!parts.length){ toast("Bitte mindestens einen Bereich wählen"); return; }
   $("#print").innerHTML = parts.join("");
   $("#dPrint").close();
@@ -616,6 +618,7 @@ function start(){
 
   initEssen();
   initPad();
+  initTodos();
   initClaude();
   initPageScroll();
   renderAll();

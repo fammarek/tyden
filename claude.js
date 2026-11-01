@@ -282,6 +282,9 @@ async function notizAusFotos(files){
     "Auf den Bildern steht eine Notiz: ein handgeschriebener Zettel, eine Einkaufsliste, eine " +
     "Tafel, eine Seite aus einem Heft oder ein Ausdruck. Schreibe ab, was dort steht.\n\n" +
     "So gehst du vor:\n" +
+    "- Lies spaltenweise: erst die linke Spalte von oben nach unten, dann die nächste Spalte " +
+    "von oben nach unten, und so weiter bis zur rechten Spalte. Schreibe alles untereinander " +
+    "in eine einzige Liste, ohne die Spalten nebeneinander nachzubauen.\n" +
     "- Übernimm den Inhalt vollständig und wortgetreu, auch Stichworte und Abkürzungen.\n" +
     "- Behalte die Gliederung bei: Zeilenumbrüche bleiben, Aufzählungen beginnen mit einem Bindestrich " +
     "und einem Leerzeichen, Überschriften stehen in einer eigenen Zeile.\n" +
