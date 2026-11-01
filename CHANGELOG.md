@@ -9,6 +9,15 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.3.4 — 1. November 2026
+
+**Behoben**
+- Das Notizfeld in der Wochenansicht hatte eine feste Höhe. Ab der dritten Zeile
+  verschwand der Text nach unten aus dem Blick. Es wächst jetzt mit dem Inhalt,
+  und die sieben Tagesspalten bleiben dabei gleich hoch.
+
+---
+
 ## v0.3.3 — 1. November 2026
 
 **Behoben**

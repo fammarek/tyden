@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.3.3";
+const VERSION = "0.3.4";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
@@ -206,9 +206,11 @@ function renderCal(){
   });
 
   $$("#calGrid .daynote").forEach(t => {
+    mitwachsen(t);
     t.oninput = () => {
       const k = t.dataset.note;
       if (t.value.trim()) DB.notes[k] = t.value; else delete DB.notes[k];
+      mitwachsen(t);
       clearTimeout(t._t);
       t._t = setTimeout(save, 400);
     };
@@ -350,6 +352,13 @@ async function loadGoogleEvents(){
     GOOGLE_EVENTS = [];
     gStatus("Konnte nicht laden: " + err.message);
   }
+}
+
+/* Das Notizfeld wächst mit dem Text, damit nichts unsichtbar abgeschnitten wird. */
+function mitwachsen(ta){
+  ta.style.height = "auto";
+  ta.style.height = Math.max(ta.scrollHeight, 44) + "px";
+  if (seitenSync) seitenSync();
 }
 
 /* ---------- Kalenderauswahl ---------- */
