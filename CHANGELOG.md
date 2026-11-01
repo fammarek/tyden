@@ -9,6 +9,15 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.3.5 — 1. November 2026
+
+**Geändert**
+- Bei der Auswahl von Hand stehen jetzt immer alle Gerichte zur Wahl, auch die
+  Wochenendgerichte an einem Werktag. Sie sind dort mit Sa/So gekennzeichnet und
+  etwas blasser dargestellt. Das Tagesfenster bindet nur noch den Würfel.
+
+---
+
 ## v0.3.4 — 1. November 2026
 
 **Behoben**

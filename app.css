@@ -431,3 +431,6 @@ html[data-season="winter"]{
 body.hat-balken main{padding-right:3.2rem}
 body.hat-balken .site{padding-right:3.2rem}
 @media print{ .pagescroll{display:none} }
+/* Gerichte außerhalb ihres Tagesfensters bleiben wählbar, nur dezenter */
+.pickgrid button.ausserhalb{opacity:.72}
+.pickgrid button.ausserhalb:hover{opacity:1}

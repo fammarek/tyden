@@ -319,6 +319,9 @@ function openPicker(d, slot){
   $("#pickDay").textContent = DAYNAME[d] + (pickSlot === 2 ? " · zweites Gericht" : "");
   $("#pickTitle").textContent = pickSlot === 2 ? "Zweites Gericht wählen" : "Gericht wählen";
   $("#pickSearch").value = "";
+  $("#pickHint").textContent = (d === "Sa" || d === "So")
+    ? ""
+    : "Alle " + RECIPES.length + " Gerichte stehen zur Wahl. Mit Sa/So gekennzeichnete würde der Würfel an diesem Tag nicht ziehen.";
   $("#freeName").value = freeAt(d, pickSlot);
   drawPicker();
   $("#dPick").showModal();
@@ -333,12 +336,18 @@ function saveFree(){
 function drawPicker(){
   const q = $("#pickSearch").value.toLowerCase();
   const we = (pickDay === "Sa" || pickDay === "So");
-  const list = RECIPES.filter(r => (we || r.win !== "we") && r.name.toLowerCase().indexOf(q) >= 0);
-  $("#pickGrid").innerHTML = list.length ? list.map(r =>
-    '<button data-id="' + r.id + '" style="background:' + colorOf(r) + '">' +
-      '<div class="c">' + CATS[r.cat].n + '</div><div class="n">' + esc(r.name) + '</div>' +
+  // Bei der Auswahl von Hand steht alles zur Verfügung. Das Tagesfenster
+  // bindet nur den Würfel; Wochenendgerichte werden hier lediglich markiert.
+  const list = RECIPES.filter(r => r.name.toLowerCase().indexOf(q) >= 0);
+  $("#pickGrid").innerHTML = list.length ? list.map(r => {
+    const ausserhalb = (r.win === "we" && !we);
+    return '<button data-id="' + r.id + '" class="' + (ausserhalb ? "ausserhalb" : "") +
+      '" style="background:' + colorOf(r) + '">' +
+      '<div class="c">' + CATS[r.cat].n + (r.win === "we" ? " &middot; Sa/So" : "") + '</div>' +
+      '<div class="n">' + esc(r.name) + '</div>' +
       '<div class="m">' + r.time + ' Min.' + (r.todo ? " · Rezept offen" : " · " + r.kh + " g KH") + '</div>' +
-    '</button>').join("") : '<p class="hint">Nichts gefunden.</p>';
+    '</button>';
+  }).join("") : '<p class="hint">Nichts gefunden.</p>';
   $$("#pickGrid button").forEach(b => b.onclick = () => {
     const w = week(keyOf(cur)), n = feldNamen(pickSlot);
     // dasselbe Gericht nicht zweimal in derselben Woche auf Platz 1
