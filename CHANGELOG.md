@@ -9,6 +9,18 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.2 — 1. November 2026
+
+**Neu**
+- Notizen abfotografieren: Im Notizblock schreibt Claude einen handgeschriebenen
+  Zettel, eine Tafel oder einen Ausdruck in die Textebene der offenen Seite.
+  Gliederung und Aufzählungen bleiben erhalten, Abgehaktes wird mit [erledigt]
+  gekennzeichnet, unsicher Gelesenes mit [?]. Der Text ist danach ganz normal
+  bearbeitbar und lässt sich mit dem Pencil ergänzen.
+- Vorhandener Text bleibt stehen, Abgeschriebenes wird darunter angehängt.
+
+---
+
 ## v0.1.1 — 1. November 2026
 
 **Behoben**

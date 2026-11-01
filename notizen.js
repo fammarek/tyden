@@ -233,6 +233,35 @@ function initPad(){
 
   $("#delPage").onclick = deletePage;
 
+  $("#notePhoto").onclick = () => {
+    if (typeof apiKey === "function" && !apiKey()){
+      toast("Kein API-Schlüssel — im Tab Essen unter „Mit Claude“ eintragen");
+      return;
+    }
+    $("#noteFile").click();
+  };
+  $("#noteFile").onchange = async ev => {
+    const files = Array.from(ev.target.files || []);
+    ev.target.value = "";
+    if (!files.length) return;
+    noteStatus("Claude liest " + (files.length > 1 ? files.length + " Bilder" : "das Bild") + " …", "busy");
+    try {
+      const text = await notizAusFotos(files);
+      if (!text){ noteStatus("Auf dem Bild war kein Text zu erkennen.", "fehler"); return; }
+      seitenText = seitenText.trim() ? seitenText.replace(/\s+$/,"") + "\n\n" + text : text;
+      $("#padText").value = seitenText;
+      await savePage();
+      setModus(false);
+      const ta = $("#padText");
+      ta.scrollTop = ta.scrollHeight;
+      noteStatus("Abgeschrieben — jetzt frei bearbeitbar", "gut");
+      setTimeout(() => noteStatus(""), 4000);
+    } catch(e){
+      noteStatus(e.message.split("\n")[0], "fehler");
+      console.warn("Abschrift fehlgeschlagen:", e.message, e.roh || "");
+    }
+  };
+
   $("#addPage").onclick = async () => {
     const seiten = await seitenDerWoche();
     notePage = seiten.length ? Math.max.apply(null, seiten) + 1 : 0;
@@ -298,6 +327,13 @@ function initScrollbar(){
   syncThumb();
 }
 let padSync = null;
+
+function noteStatus(text, art){
+  const el = $("#noteStatus");
+  if (!el) return;
+  el.textContent = text || "";
+  el.className = "notestatus" + (art ? " " + art : "");
+}
 
 async function seitenDerWoche(){
   const keys = await dbKeys();

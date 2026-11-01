@@ -271,6 +271,30 @@ async function recipeFromText(input){
   return toDish(parseJson(txt));
 }
 
+/* ---------- Notiz aus Foto abschreiben ---------- */
+async function notizAusFotos(files){
+  const parts = [];
+  for (const f of files){
+    parts.push({type: "image",
+      source: {type: "base64", media_type: f.type || "image/jpeg", data: await fileToBase64(f)}});
+  }
+  parts.push({type: "text", text:
+    "Auf den Bildern steht eine Notiz: ein handgeschriebener Zettel, eine Einkaufsliste, eine " +
+    "Tafel, eine Seite aus einem Heft oder ein Ausdruck. Schreibe ab, was dort steht.\n\n" +
+    "So gehst du vor:\n" +
+    "- Übernimm den Inhalt vollständig und wortgetreu, auch Stichworte und Abkürzungen.\n" +
+    "- Behalte die Gliederung bei: Zeilenumbrüche bleiben, Aufzählungen beginnen mit einem Bindestrich " +
+    "und einem Leerzeichen, Überschriften stehen in einer eigenen Zeile.\n" +
+    "- Abgehakte oder durchgestrichene Punkte kennzeichnest du am Zeilenende mit [erledigt].\n" +
+    "- Ist ein Wort nicht sicher zu lesen, schreibe deine beste Vermutung und setze dahinter ein [?].\n" +
+    "- Erfinde nichts dazu, ordne nichts um und kommentiere nicht.\n" +
+    "- Mehrere Bilder schreibst du nacheinander ab, getrennt durch eine Leerzeile.\n\n" +
+    "Gib ausschließlich den abgeschriebenen Text aus, ohne Einleitung und ohne Codeblock."});
+  const txt = await askClaude(parts, 3000);
+  letzteRohantwort = txt;
+  return String(txt || "").trim();
+}
+
 /* ---------- Vorschläge aus dem Vorrat ---------- */
 async function suggestFromStock(stockText, photos){
   const namen = RECIPES.map(r => r.name + " (" + CATS[r.cat].n + ", " + r.time + " Min.)").join("; ");

@@ -97,6 +97,7 @@
     <div class="bar">
       <h2>Notizblock</h2>
       <div class="pages" id="notePages"></div>
+      <span class="notestatus" id="noteStatus"></span>
       <div class="baracts">
         <div class="modes">
           <button class="tool on" id="modePen" title="Mit dem Pencil schreiben">&#9998;</button>
@@ -106,6 +107,8 @@
         <button class="tool" id="eraser" title="Radierer">&#9003;</button>
         <button class="tool" id="undo" title="Rückgängig">&#8630;</button>
         <button class="tool" id="clearPage" title="Seite leeren">&#128465;</button>
+        <button class="btn ghost" id="notePhoto">Foto abschreiben</button>
+        <input type="file" id="noteFile" accept="image/*" capture="environment" multiple hidden>
         <button class="btn ghost" id="addPage">Seite +</button>
         <button class="btn ghost" id="delPage">Seite entfernen</button>
       </div>
