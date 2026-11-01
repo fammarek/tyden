@@ -18,35 +18,56 @@ function setModell(m){ try { localStorage.setItem(K_MODEL, m || MODEL_STD); } ca
 let letzteAntwort = "";
 
 const SCHEMA = `{
-  "name": "Name des Gerichts",
-  "sub": "ein kurzer Satz, der das Gericht beschreibt",
+  "name": "Name des Gerichts, kurz und auf Deutsch",
+  "sub": "ein Satz, der das Gericht oder seinen Kniff beschreibt",
   "cat": "fleisch | fisch | veg | suppe",
   "win": "alle | we",
-  "time": Minuten als Zahl,
-  "kh": geschätzte Kohlenhydrate pro Portion in Gramm als Zahl,
+  "time": Gesamtzeit in Minuten als Zahl,
+  "kh": Kohlenhydrate pro Portion in Gramm als Zahl, ohne Beilage,
   "zut": [["Zutat", Menge als Zahl, "Einheit", "Warengruppe"], ...],
   "steps": ["Schritt 1", "Schritt 2", ...],
-  "tipp": "ein praktischer Hinweis"
+  "tipp": "ein praktischer Hinweis aus der Küche"
 }`;
 
-const REGELN = `Regeln:
-- Mengen immer für 4 Portionen.
-- Einheit ist eine von: "", "g", "kg", "ml", "l", "EL", "TL", "Stange", "Bund", "Kopf", "Zweige", "Blatt", "cm", "Prise", "Dose". Leerer String bedeutet Stück.
-- Frische Kräuter in "Bund" oder "Zweige", getrocknete in "TL" oder "EL".
-- Warengruppe ist eine von: "g" für Obst und Gemüse, "f" für Fleisch und Fisch, "m" für Kühlregal, "v" für Vorrat.
-- win ist "we", wenn das Gericht nicht Low Carb ist und deshalb nur an Samstag oder Sonntag passen soll, sonst "alle".
-- Schritte knapp und in ganzen Sätzen, höchstens sieben Stück, deutsch.
-- Antworte ausschließlich mit dem JSON, ohne Fließtext und ohne Codeblock.`;
+const REGELN = `So wird das Rezept aufgeschrieben:
 
-function klartext(status, typ, text){
-  if (status === 401) return "Der Schlüssel wird nicht akzeptiert. Meist ist er unvollständig kopiert oder in der Konsole wieder gelöscht worden.";
-  if (status === 400 && /credit|balance/i.test(text)) return "Das Guthaben im Anthropic-Konto reicht nicht. Unter Billing aufladen.";
-  if (status === 404) return "Diesen Modellnamen kennt die Schnittstelle nicht. Trage unten im Feld Modell die vollständige Bezeichnung mit Datum ein, etwa claude-sonnet-4-5-20250929.";
-  if (status === 429) return "Zu viele Anfragen in kurzer Zeit. Kurz warten und erneut versuchen.";
-  if (status === 529 || status === 503) return "Der Dienst ist gerade überlastet. In ein paar Minuten noch einmal versuchen.";
-  if (typ === "network") return "Keine Verbindung zur Anthropic-Schnittstelle. Entweder fehlt das Netz, oder ein Inhaltsblocker im Browser hält die Anfrage auf.";
-  return "";
-}
+MENGEN
+- Immer für 4 Portionen umrechnen, auch wenn die Quelle andere Mengen nennt.
+- Einheit ist genau eine aus dieser Liste: "", "g", "kg", "ml", "l", "EL", "TL",
+  "Stange", "Bund", "Kopf", "Zweige", "Blatt", "cm", "Prise", "Dose".
+  Ein leerer String bedeutet Stück, also 2 Zwiebeln oder 4 Eier.
+- Frische Kräuter in "Bund" oder "Zweige", getrocknete Kräuter und Gewürze in "TL" oder "EL".
+  Daran erkennt die Einkaufsliste, was gekauft werden muss und was im Vorrat steht.
+
+ZUTATENNAMEN
+- Grundwort zuerst, Zusatz nach einem Komma: "Paprikapulver, edelsüß", nicht "edelsüßes Paprikapulver".
+- Gleiche Dinge immer gleich benennen, damit die Einkaufsliste sie zusammenzählt.
+- Keine Mengen oder Zubereitungshinweise im Namen, also "Zwiebel" statt "1 große Zwiebel, gewürfelt".
+
+WARENGRUPPE
+- "g" für Obst und Gemüse, "f" für Fleisch und Fisch, "m" für Kühlregal wie Milch, Käse, Eier, Sahne,
+  "v" für Vorrat wie Konserven, Öl, Gewürze, Mehl.
+
+EINORDNUNG
+- Dieser Haushalt kocht unter der Woche kohlenhydratarm. Gerichte mit Nudeln, Reis, Kartoffeln,
+  Brot, Panade oder Teig bekommen win = "we" und sind damit Samstag und Sonntag vorbehalten.
+  Alles andere bekommt win = "alle".
+- cat richtet sich nach dem prägenden Bestandteil. Eine Suppe ist "suppe", auch wenn Fleisch darin ist.
+
+SCHRITTE
+- Höchstens sieben Schritte, ganze Sätze, Deutsch, keine Nummerierung im Text.
+- Nenne beim entscheidenden Handgriff kurz, worauf es ankommt, etwa dass die Pfanne heiß genug sein
+  muss oder das Gemüse vorher gesalzen und abgetupft wird. Keine Floskeln.
+- Backofentemperaturen und Garzeiten konkret angeben.
+
+TIPP
+- Ein Satz, der beim Nachkochen wirklich hilft: ein häufiger Fehler, eine Vorbereitung am Vortag,
+  eine Low-Carb-Alternative für die Beilage.
+
+AUSGABE
+- Ausschließlich das JSON, kein Fließtext davor oder danach, kein Codeblock.
+- Was du nicht sicher erkennst, schätzt du plausibel, statt das Feld leer zu lassen.`;
+
 async function askClaude(content, maxTokens){
   const key = apiKey();
   if (!key) throw new Error("Kein API-Schlüssel hinterlegt — weiter unten im Abschnitt Zugang eintragen.");
@@ -119,6 +140,37 @@ function toDish(j){
   };
 }
 
+/* ---------- Verfügbare Modelle abfragen ----------
+   Welche Modelle ein Schlüssel verwenden darf, hängt am Konto.
+   Statt zu raten, fragen wir die Liste direkt ab. */
+async function modelleHolen(){
+  const key = apiKey();
+  if (!key) throw new Error("Kein API-Schlüssel hinterlegt.");
+  let r;
+  try {
+    r = await fetch("https://api.anthropic.com/v1/models?limit=100", {
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      }
+    });
+  } catch(netz){
+    const err = new Error(klartext(0, "network", "") + " (" + netz.message + ")");
+    err.roh = "Netzwerkfehler: " + netz.message;
+    throw err;
+  }
+  const rohtext = await r.text();
+  letzteAntwort = "HTTP " + r.status + "\n\n" + rohtext;
+  if (!r.ok){
+    const err = new Error("HTTP " + r.status + "\n" + rohtext.slice(0, 300));
+    err.roh = letzteAntwort;
+    throw err;
+  }
+  const d = JSON.parse(rohtext);
+  return (d.data || []).map(m => ({id: m.id, name: m.display_name || m.id}));
+}
+
 /* ---------- Rezept aus Foto ---------- */
 function fileToBase64(file){
   return new Promise((res, rej) => {
@@ -137,8 +189,10 @@ async function recipeFromPhotos(files){
     });
   }
   parts.push({type: "text", text:
-    "Lies das Rezept auf den Bildern und gib es als JSON in genau dieser Form zurück:\n" +
-    SCHEMA + "\n\n" + REGELN});
+    "Auf den Bildern steht ein Rezept, fotografiert aus einem Kochbuch, von einem Zettel oder " +
+    "einem Bildschirm. Lies es vollständig, auch wenn es über mehrere Bilder läuft oder schräg " +
+    "fotografiert ist, und übertrage es in dieses JSON:\n" + SCHEMA + "\n\n" + REGELN +
+    "\n\nWenn auf den Bildern mehrere Rezepte stehen, nimm das, das den meisten Platz einnimmt."});
   const txt = await askClaude(parts, 2500);
   return toDish(parseJson(txt));
 }
@@ -157,8 +211,12 @@ async function recipeFromText(input){
     }
   }
   const txt = await askClaude([{type: "text", text:
-    "Hier ist eine Rezeptquelle. Extrahiere daraus ein Rezept als JSON in genau dieser Form:\n" +
-    SCHEMA + "\n\n" + REGELN + "\n\nQuelle:\n" + quelle}], 2500);
+    "Unten steht eine Rezeptquelle: entweder der Text einer Webseite samt Navigation, Werbung und " +
+    "Kommentaren, oder ein eingefügter Rezepttext, oder nur der Wunsch nach einem Gericht. " +
+    "Suche das eigentliche Rezept heraus und ignoriere alles Drumherum. Steht dort kein Rezept, " +
+    "sondern nur ein Gerichtname, schreibe ein passendes Rezept für einen Familienhaushalt. " +
+    "Gib das Ergebnis in diesem JSON zurück:\n" + SCHEMA + "\n\n" + REGELN +
+    "\n\n--- QUELLE ---\n" + quelle}], 2500);
   return toDish(parseJson(txt));
 }
 
@@ -170,13 +228,26 @@ async function suggestFromStock(stockText, photos){
     parts.push({type: "image",
       source: {type: "base64", media_type: f.type || "image/jpeg", data: await fileToBase64(f)}});
   }
+  const heute = new Date();
+  const wochentag = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][heute.getDay()];
+  const we = (heute.getDay() === 0 || heute.getDay() === 6);
   parts.push({type: "text", text:
-    "Das ist mein aktueller Vorrat:\n" + (stockText || "(siehe Bilder)") +
-    "\n\nMeine Rezeptkartei enthält diese Gerichte:\n" + namen +
-    "\n\nSchlage vier Gerichte vor, die ich damit heute oder morgen kochen kann. " +
-    "Bevorzuge Gerichte aus meiner Kartei. Achte auf Low Carb, außer du kennzeichnest es als Wochenendgericht. " +
-    "Antworte ausschließlich als JSON-Array in dieser Form, ohne Fließtext:\n" +
-    '[{"name":"…","aus_kartei":true,"fehlt":["Zutat, die ich noch brauche"],"warum":"ein kurzer Satz"}]'});
+    "Ich plane das Abendessen für einen Haushalt mit zwei Erwachsenen und zwei Kindern. " +
+    "Unter der Woche kochen wir kohlenhydratarm, am Wochenende ist alles erlaubt. " +
+    "Heute ist " + wochentag + ", also " + (we ? "ein Wochenendtag." : "ein Werktag, Low Carb.") +
+    "\n\nVorhanden ist:\n" + (stockText || "(siehe die Bilder)") +
+    (photos && photos.length ? "\nDie Bilder zeigen Kühlschrank oder Vorratsschrank. " +
+      "Benenne nur, was du wirklich erkennst." : "") +
+    "\n\nMeine Rezeptkartei:\n" + namen +
+    "\n\nSchlage vier Gerichte vor, die sich daraus heute oder morgen kochen lassen. " +
+    "Nimm bevorzugt Gerichte aus der Kartei und setze sie nach oben. Ein oder zwei neue Vorschläge " +
+    "sind erlaubt, wenn sie besser zum Vorrat passen. " +
+    "Grundnahrungsmittel wie Öl, Salz, Pfeffer, Mehl und getrocknete Gewürze darfst du als vorhanden " +
+    "annehmen, auch wenn sie oben nicht stehen. " +
+    "Unter fehlt listest du nur, was tatsächlich noch gekauft werden muss, höchstens drei Dinge. " +
+    "Findest du zu wenig, sage es ehrlich und schlage weniger als vier Gerichte vor.\n\n" +
+    "Antworte ausschließlich mit diesem JSON-Array, ohne Fließtext:\n" +
+    '[{"name":"…","aus_kartei":true,"fehlt":["…"],"warum":"ein Satz, warum es gerade passt"}]'});
   const txt = await askClaude(parts, 1500);
   return parseJson(txt);
 }
@@ -196,6 +267,25 @@ function initClaude(){
       aiDone();
     }
     toast(k ? "Gespeichert" : "Schlüssel entfernt");
+  };
+  $("#listModels").onclick = async () => {
+    aiBusy("Modelle werden abgefragt …");
+    try {
+      const liste = await modelleHolen();
+      aiDone();
+      const el = $("#aiStatus");
+      el.className = "aistatus gut";
+      el.innerHTML = '<b>' + liste.length + ' Modelle für diesen Schlüssel</b>' +
+        '<p class="hint" style="margin:.4rem 0">Antippen übernimmt den Namen ins Feld Modell.</p>' +
+        '<div class="modelle">' + liste.map(m =>
+          '<button class="mini" data-model="' + esc(m.id) + '">' + esc(m.name) + '</button>').join("") +
+        '</div>';
+      $$("#aiStatus [data-model]").forEach(b => b.onclick = () => {
+        $("#apiModel").value = b.dataset.model;
+        setModell(b.dataset.model);
+        toast("Modell gesetzt: " + b.dataset.model);
+      });
+    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
   };
   $("#testKey").onclick = async () => {
     aiBusy("Verbindung wird geprüft …");

@@ -18,7 +18,7 @@
 <body>
 
 <header class="site">
-  <div class="brand"><i></i><b>Týden</b></div>
+  <div class="brand"><i></i><b>Týden</b><span class="ver" id="version"></span></div>
 
   <div class="weeknav">
     <button class="nav" id="prev" aria-label="Vorige Woche">&lsaquo;</button>
@@ -257,6 +257,7 @@
       ins Repository. Achte beim Einfügen darauf, dass kein Leerzeichen mitkommt.</p>
     <div class="baracts">
       <button class="btn" id="testKey">Verbindung prüfen</button>
+      <button class="btn ghost" id="listModels">Verfügbare Modelle</button>
       <button class="btn ghost" id="saveKey">Speichern</button>
     </div>
   </div>
@@ -301,6 +302,7 @@
     <div id="gCals"></div>
     <hr>
     <h3>Daten</h3>
+    <p class="hint" id="versionInfo" style="margin-bottom:.6rem"></p>
     <div class="baracts">
       <button class="btn ghost" id="backup">Sicherung speichern</button>
       <button class="btn ghost" id="restoreBtn">Sicherung laden</button>

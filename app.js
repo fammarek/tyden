@@ -4,6 +4,10 @@
            Google-Anbindung, Druck
    ============================================================ */
 
+/* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
+   damit der Offline-Speicher die neue Fassung sicher übernimmt. */
+const VERSION = "0.1";
+
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
 const SEASONS = {fruehling:"Frühling", sommer:"Sommer", herbst:"Herbst", winter:"Winter"};
@@ -488,6 +492,11 @@ function download(name, text, type){
 function start(){
   load();
   applySeason();
+
+  const vTag = $("#version");
+  if (vTag) vTag.textContent = "v" + VERSION;
+  const vInfo = $("#versionInfo");
+  if (vInfo) vInfo.textContent = "Týden v" + VERSION;
 
   $("#prev").onclick = () => gotoWeek(-1);
   $("#next").onclick = () => gotoWeek(1);
