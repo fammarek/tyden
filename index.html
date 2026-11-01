@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Týden">
+<meta name="theme-color" content="#FAF8F0">
+<title>Týden · Wochenplan</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="brand"><i></i><b>Týden</b></div>
+
+  <div class="weeknav">
+    <button class="nav" id="prev" aria-label="Vorige Woche">&lsaquo;</button>
+    <div class="kw">
+      <b id="kwTitle">KW</b>
+      <span class="lbl" id="kwRange"></span>
+    </div>
+    <button class="nav" id="next" aria-label="Nächste Woche">&rsaquo;</button>
+    <button class="nav wide" id="today">Heute</button>
+  </div>
+
+  <div class="headacts">
+    <button class="btn ghost" id="openPrint">Drucken</button>
+    <button class="btn ghost" id="openSettings" aria-label="Einstellungen">&#9881;</button>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-tab="kalender">Kalender</button>
+    <button class="tab" data-tab="essen">Essen</button>
+    <button class="tab" data-tab="einkauf">Einkauf</button>
+    <button class="tab" data-tab="notizen">Notizen</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ---------- Kalender ---------- -->
+  <section class="view" id="view-kalender">
+    <div class="weekgrid" id="calGrid"></div>
+  </section>
+
+  <!-- ---------- Essen ---------- -->
+  <section class="view hidden" id="view-essen">
+    <div class="bar">
+      <h2>Zdravé meníčko</h2>
+      <div class="barcats" id="mealCounts"></div>
+      <div class="baracts">
+        <button class="btn" id="roll">Woche würfeln</button>
+        <button class="btn ghost" id="clearMeals">Leeren</button>
+        <button class="btn ghost" id="openKartei">Rezeptkartei</button>
+        <button class="btn ghost" id="openKI">Mit Claude</button>
+      </div>
+    </div>
+    <div class="weekgrid" id="mealGrid"></div>
+    <div class="foot">
+      <label>Sperrfrist
+        <select id="lock">
+          <option value="0">aus</option><option value="1">1 Woche</option>
+          <option value="2">2 Wochen</option><option value="3">3 Wochen</option><option value="4">4 Wochen</option>
+        </select>
+      </label>
+      <label>Portionen
+        <select id="defPort"><option>2</option><option>4</option><option>6</option><option>8</option></select>
+      </label>
+      <span id="poolInfo"></span>
+    </div>
+  </section>
+
+  <!-- ---------- Einkauf ---------- -->
+  <section class="view hidden" id="view-einkauf">
+    <div class="bar">
+      <h2>Einkaufsliste</h2>
+      <div class="barcats" id="shopStats"></div>
+      <div class="baracts">
+        <button class="btn" id="waShare">An WhatsApp</button>
+        <button class="btn ghost" id="copyList">Kopieren</button>
+        <button class="btn ghost" id="editPantry">Vorrat</button>
+        <button class="btn ghost" id="resetChecks">Haken zurücksetzen</button>
+      </div>
+    </div>
+    <div class="sheetbox" id="shopBody"></div>
+  </section>
+
+  <!-- ---------- Notizen ---------- -->
+  <section class="view hidden" id="view-notizen">
+    <div class="bar">
+      <h2>Notizblock</h2>
+      <div class="pages" id="notePages"></div>
+      <div class="baracts">
+        <div class="pens" id="pens"></div>
+        <button class="tool" id="eraser" title="Radierer">&#9003;</button>
+        <button class="tool" id="undo" title="Rückgängig">&#8630;</button>
+        <button class="tool" id="clearPage" title="Seite leeren">&#128465;</button>
+        <button class="btn ghost" id="addPage">Seite +</button>
+      </div>
+    </div>
+    <div class="canvaswrap"><canvas id="pad"></canvas></div>
+  </section>
+</main>
+
+<!-- ---------- Dialoge ---------- -->
+<dialog id="dRec"><div class="sheet">
+  <div class="top" id="recTop">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light" id="recCat"></p>
+    <h2 id="recName"></h2>
+    <p class="sub" id="recSub"></p>
+    <div class="stats" id="recStats"></div>
+  </div>
+  <div class="sbody" id="recBody"></div>
+  <div class="sfoot" id="recFoot"></div>
+</div></dialog>
+
+<dialog id="dPick"><div class="sheet">
+  <div class="top" style="background:var(--ink)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light" id="pickDay"></p>
+    <h2>Gericht wählen</h2>
+  </div>
+  <div class="sbody">
+    <div class="freebox">
+      <label class="lbl" for="freeName">Freies Gericht — nur ein Name, kein Rezept, keine Zutaten auf der Einkaufsliste</label>
+      <div class="freerow">
+        <input id="freeName" placeholder="z. B. Reste, Essen gehen, Oma kocht">
+        <button class="btn" id="freeSave">Eintragen</button>
+      </div>
+    </div>
+    <input class="search" id="pickSearch" type="search" placeholder="Rezept suchen …">
+    <div class="pickgrid" id="pickGrid"></div>
+  </div>
+</div></dialog>
+
+<dialog id="dKartei"><div class="sheet">
+  <div class="top" style="background:var(--leaf)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light">Review &amp; Pflege</p>
+    <h2>Rezeptkartei</h2>
+    <div class="stats" id="karteiStats"></div>
+  </div>
+  <div class="sbody">
+    <input class="search" id="karteiSearch" type="search" placeholder="Suchen …">
+    <div class="pickgrid" id="karteiGrid"></div>
+  </div>
+  <div class="sfoot">
+    <button class="btn" id="newDish">Neues Gericht</button>
+    <button class="btn ghost" id="exportJs">Rezepte exportieren</button>
+    <button class="btn ghost" id="resetAll">Zurücksetzen</button>
+  </div>
+</div></dialog>
+
+<dialog id="dEdit"><div class="sheet">
+  <div class="top" style="background:var(--ink)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light">Bearbeiten</p>
+    <h2 id="editTitle">Rezept</h2>
+  </div>
+  <div class="sbody" id="editBody"></div>
+  <div class="sfoot">
+    <button class="btn" id="saveDish">Speichern</button>
+    <button class="btn ghost" data-close>Abbrechen</button>
+    <button class="btn ghost" id="delDish" style="margin-left:auto">Löschen</button>
+  </div>
+</div></dialog>
+
+<dialog id="dPantry"><div class="sheet">
+  <div class="top" style="background:var(--leaf)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light">Einkaufsliste</p>
+    <h2>Vorrat</h2>
+    <p class="sub">Was hier steht, landet nicht auf der Liste.</p>
+  </div>
+  <div class="sbody">
+    <p class="hint">Ein Begriff pro Zeile, klein geschrieben. Er greift auch am Wortende — <b>öl</b> deckt
+      Olivenöl ab, <b>brühe</b> alle Brühen. Frische Ware ist ausgenommen: Was in Bund, Zweigen, Kopf,
+      Stange oder Blatt gemessen wird, steht immer auf der Liste.</p>
+    <div class="field"><textarea id="pantryText" rows="14"></textarea></div>
+  </div>
+  <div class="sfoot">
+    <button class="btn" id="savePantry">Speichern</button>
+    <button class="btn ghost" data-close>Abbrechen</button>
+    <button class="btn ghost" id="resetPantry" style="margin-left:auto">Standard</button>
+  </div>
+</div></dialog>
+
+<dialog id="dKI"><div class="sheet">
+  <div class="top" style="background:var(--leaf)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light">Rezepte und Vorschläge</p>
+    <h2>Mit Claude</h2>
+  </div>
+  <div class="sbody">
+    <div id="aiStatus" class="aistatus"></div>
+
+    <h3>Rezept hinzufügen</h3>
+    <p class="hint">Foto einer Kochbuchseite oder eines Zettels, oder ein Link. Das Ergebnis landet
+      als ungeprüftes Rezept im Editor — du siehst es vor dem Speichern.</p>
+    <div class="baracts" style="margin-bottom:.8rem">
+      <button class="btn ghost" id="fromPhoto">Foto aufnehmen oder wählen</button>
+      <input type="file" id="photoFile" accept="image/*" capture="environment" multiple hidden>
+    </div>
+    <div class="field"><label class="lbl">Link oder eingefügter Rezepttext</label>
+      <textarea id="linkInput" rows="3" placeholder="https://… oder den Text direkt einfügen"></textarea></div>
+    <div class="baracts"><button class="btn ghost" id="fromLink">Daraus ein Rezept machen</button></div>
+
+    <hr>
+
+    <h3>Was kann ich damit kochen?</h3>
+    <p class="hint">Tippe ein, was da ist, oder fotografiere Kühlschrank und Vorratsschrank.
+      Claude bevorzugt Gerichte aus deiner Kartei.</p>
+    <div class="field"><label class="lbl">Vorhanden</label>
+      <textarea id="stockText" rows="3" placeholder="z. B. Hähnchenbrust, Zucchini, Feta, Sahne"></textarea></div>
+    <div class="baracts">
+      <button class="btn ghost" id="stockPhoto">Foto vom Vorrat</button>
+      <input type="file" id="stockFile" accept="image/*" capture="environment" multiple hidden>
+      <span class="hint" id="stockHint" style="margin:0"></span>
+      <button class="btn" id="doSuggest">Vorschläge holen</button>
+    </div>
+    <div id="aiOut"></div>
+
+    <hr>
+    <h3>Zugang</h3>
+    <div class="field"><label class="lbl">Anthropic API-Schlüssel</label>
+      <input id="apiKey" type="password" placeholder="sk-ant-…"></div>
+    <p class="hint">Bleibt nur auf diesem Gerät im Browser gespeichert. Niemals ins Repository legen.
+      Die Anleitung steht in der README.</p>
+    <div class="baracts"><button class="btn ghost" id="saveKey">Schlüssel speichern</button></div>
+  </div>
+</div></dialog>
+
+<dialog id="dPrint"><div class="sheet">
+  <div class="top" style="background:var(--ink)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light" id="printKw"></p>
+    <h2>Drucken</h2>
+  </div>
+  <div class="sbody">
+    <p class="hint">Bereiche auswählen, dann öffnet sich das Druckfenster. Auf dem iPad wählst du dort
+      deinen AirPrint-Drucker.</p>
+    <label class="chk big"><input type="checkbox" id="pr_wochenplan" checked> Wochenplan mit Terminen</label>
+    <label class="chk big"><input type="checkbox" id="pr_essen" checked> Essensplan</label>
+    <label class="chk big"><input type="checkbox" id="pr_einkauf" checked> Einkaufsliste</label>
+    <label class="chk big"><input type="checkbox" id="pr_notizen"> Notizen</label>
+    <label class="chk big"><input type="checkbox" id="pr_rezepte"> Rezepte der Woche, ausführlich</label>
+  </div>
+  <div class="sfoot">
+    <button class="btn" id="doPrint">Druckfenster öffnen</button>
+    <button class="btn ghost" data-close>Abbrechen</button>
+  </div>
+</div></dialog>
+
+<dialog id="dSettings"><div class="sheet">
+  <div class="top" style="background:var(--pine)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light">Einstellungen</p>
+    <h2>Google Kalender</h2>
+  </div>
+  <div class="sbody">
+    <div id="gStatus" class="gstatus"></div>
+    <div class="field">
+      <label class="lbl">OAuth Client-ID</label>
+      <input id="gClientId" placeholder="….apps.googleusercontent.com">
+    </div>
+    <p class="hint">Die Client-ID legst du einmalig in der Google Cloud Console an. Die Anleitung dazu
+      steht in der Datei <b>README.md</b> im selben Ordner. Ohne Client-ID funktioniert alles außer der
+      Anzeige der Google-Termine.</p>
+    <div id="gCals"></div>
+    <hr>
+    <h3>Daten</h3>
+    <div class="baracts">
+      <button class="btn ghost" id="backup">Sicherung speichern</button>
+      <button class="btn ghost" id="restoreBtn">Sicherung laden</button>
+      <input type="file" id="restoreFile" accept="application/json" hidden>
+    </div>
+  </div>
+  <div class="sfoot">
+    <button class="btn" id="gConnect">Mit Google verbinden</button>
+    <button class="btn ghost" id="gDisconnect">Trennen</button>
+    <button class="btn ghost" data-close style="margin-left:auto">Schließen</button>
+  </div>
+</div></dialog>
+
+<div class="toast" id="toast"></div>
+<div id="print"></div>
+
+<script src="rezepte.js"></script>
+<script src="app.js"></script>
+<script src="essen.js"></script>
+<script src="notizen.js"></script>
+<script src="claude.js"></script>
+<script>start();</script>
+</body>
+</html>
