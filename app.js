@@ -126,24 +126,34 @@ function applySeason(){
 /* ---------- Termine ---------- */
 /* Termine kommen ausschließlich aus Google und werden nur gelesen. */
 let GOOGLE_EVENTS = [];
+let GCOLORS = null;          // Farbtabelle von Google
+
+function tint(hex, a){
+  const h = String(hex || "#2C5140").replace("#","");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+}
 
 function eventsOn(dayKey){
-  return GOOGLE_EVENTS
-    .filter(e => dayKey >= e.start && dayKey <= e.end)
+  const alle = GOOGLE_EVENTS.filter(e => dayKey >= e.start && dayKey <= e.end);
+  // Mehrtägige zuerst und in fester Reihenfolge, damit sie nicht im Tag wandern
+  const mehr = alle.filter(e => e.end > e.start)
+    .sort((a, b) => (a.start + a.id).localeCompare(b.start + b.id));
+  const einzel = alle.filter(e => e.end === e.start)
     .sort((a, b) => (a.from || "00:00").localeCompare(b.from || "00:00"));
+  return mehr.concat(einzel);
 }
 
 /* Beschriftung: an den Wochenrändern "seit"/"bis", sonst Uhrzeit */
 function eventLabel(ev, dayKey, firstKey, lastKey){
   const mehrtaegig = ev.end > ev.start;
   if (mehrtaegig){
+    // an den Wochenrändern der Blick nach außen, sonst die volle Spanne
     if (dayKey === firstKey && ev.start < firstKey)
       return "seit " + fmtD(parseISO(ev.start));
     if (dayKey === lastKey && ev.end > lastKey)
       return "bis " + fmtD(parseISO(ev.end));
-    if (dayKey === ev.start) return "ab " + (ev.from || "ganztägig");
-    if (dayKey === ev.end)   return "bis " + (ev.to || "Tagesende");
-    return "läuft";
+    return fmtD(parseISO(ev.start)) + "–" + fmtD(parseISO(ev.end));
   }
   if (ev.from && ev.to) return ev.from + " – " + ev.to;
   if (ev.from) return "ab " + ev.from;
@@ -168,12 +178,20 @@ function renderCal(){
       '<div class="dayhead"><b>' + DAYNAME[day] + '</b><span>' + fmtD(date) + '</span></div>' +
       '<div class="daybody">' +
         (evs.length
-          ? evs.map(ev =>
-              '<div class="ev g">' +
+          ? evs.map(ev => {
+              const mehrtaegig = ev.end > ev.start;
+              const vor  = ev.start < key;     // läuft schon vor diesem Tag
+              const nach = ev.end   > key;     // läuft über diesen Tag hinaus
+              const stil = 'style="--c:' + (ev.color || "#2C5140") + ';background:' +
+                tint(ev.color, mehrtaegig ? .2 : .13) + '"';
+              return '<div class="ev' + (mehrtaegig ? " band" : "") +
+                (vor ? " cont-l" : "") + (nach ? " cont-r" : "") + '" ' + stil + '>' +
+                (mehrtaegig ? '<span class="arrows">' + (vor ? "‹" : "") + (nach ? "›" : "") + '</span>' : '') +
                 '<time>' + esc(eventLabel(ev, key, firstKey, lastKey)) + '</time>' +
                 '<b>' + esc(ev.text) + '</b>' +
                 (ev.note ? '<time>' + esc(ev.note) + '</time>' : '') +
-              '</div>').join("")
+              '</div>';
+            }).join("")
           : '<div class="noev">' + (gToken ? "keine Termine" : "nicht verbunden") + '</div>') +
         '<textarea class="daynote" data-note="' + key + '" placeholder="Notiz">' +
           esc(DB.notes[key] || "") + '</textarea>' +
@@ -277,8 +295,21 @@ async function loadGoogleEvents(){
   const min = new Date(dates[0].date); min.setUTCDate(min.getUTCDate() - 1);
   const max = new Date(dates[6].date); max.setUTCDate(max.getUTCDate() + 2);
   try {
+    if (!GCOLORS){
+      try { GCOLORS = await gFetch("https://www.googleapis.com/calendar/v3/colors"); } catch(e){ GCOLORS = {}; }
+    }
     const cl = await gFetch("https://www.googleapis.com/calendar/v3/users/me/calendarList");
-    const cals = (cl.items || []).filter(c => c.selected !== false);
+    // Liste für die Einstellungen merken
+    DB.settings.calList = (cl.items || []).map(c => ({
+      id: c.id, name: c.summaryOverride || c.summary, bg: c.backgroundColor || "#2C5140"
+    }));
+    if (!Array.isArray(DB.settings.cals) || !DB.settings.cals.length){
+      // beim ersten Mal alles übernehmen, was in Google sichtbar ist
+      DB.settings.cals = (cl.items || []).filter(c => c.selected !== false).map(c => c.id);
+    }
+    save();
+    renderCalPicker();
+    const cals = (cl.items || []).filter(c => DB.settings.cals.indexOf(c.id) >= 0);
     const all = [];
     for (const c of cals){
       const u = "https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) +
@@ -295,9 +326,12 @@ async function loadGoogleEvents(){
         if (ganztag){                              // Google endet bei Ganztagsterminen am Folgetag
           const x = parseISO(endKey); x.setUTCDate(x.getUTCDate() - 1); endKey = iso(x);
         }
+        const evFarbe = (ev.colorId && GCOLORS && GCOLORS.event && GCOLORS.event[ev.colorId])
+          ? GCOLORS.event[ev.colorId].background
+          : (c.backgroundColor || "#2C5140");
         all.push({
           id: ev.id, text: ev.summary || "ohne Titel",
-          note: ev.location || "",
+          note: ev.location || "", color: evFarbe, kalender: c.summaryOverride || c.summary,
           start: sD.slice(0,10), end: endKey < sD.slice(0,10) ? sD.slice(0,10) : endKey,
           from: ganztag ? "" : sD.slice(11,16),
           to:   ganztag ? "" : (eD || "").slice(11,16)
@@ -305,11 +339,34 @@ async function loadGoogleEvents(){
       });
     }
     GOOGLE_EVENTS = all;
-    gStatus("Verbunden — " + all.length + " Termine in dieser Woche.", true);
+    gStatus("Verbunden — " + all.length + " Termine aus " + cals.length + " Kalendern.", true);
   } catch(err){
     GOOGLE_EVENTS = [];
     gStatus("Konnte nicht laden: " + err.message);
   }
+}
+
+/* ---------- Kalenderauswahl ---------- */
+function renderCalPicker(){
+  const box = $("#gCals");
+  if (!box) return;
+  const list = DB.settings.calList || [];
+  if (!list.length){ box.innerHTML = ""; return; }
+  box.innerHTML = '<p class="lbl" style="margin:1rem 0 .4rem">Welche Kalender anzeigen</p>' +
+    list.map((c, i) =>
+      '<label class="chk calrow"><input type="checkbox" data-cal="' + esc(c.id) + '"' +
+      ((DB.settings.cals || []).indexOf(c.id) >= 0 ? " checked" : "") + '>' +
+      '<span class="swatch" style="background:' + esc(c.bg) + '"></span>' +
+      '<span>' + esc(c.name) + '</span></label>').join("");
+  $$("#gCals [data-cal]").forEach(cb => cb.onchange = () => {
+    const id = cb.dataset.cal;
+    let sel = (DB.settings.cals || []).slice();
+    if (cb.checked){ if (sel.indexOf(id) < 0) sel.push(id); }
+    else sel = sel.filter(x => x !== id);
+    DB.settings.cals = sel;
+    save();
+    loadGoogleEvents().then(renderCal);
+  });
 }
 
 /* ---------- Tabs ---------- */
@@ -354,8 +411,12 @@ function printWochenplan(){
     const dish = typeof dishOfDay === "function" ? dishOfDay(day) : null;
     return '<div class="pday"><h4>' + DAYNAME[day] + '</h4><div class="pd">' + fmtD(date) + '</div>' +
       (dish ? '<div class="pm"><i>Essen</i>' + esc(dish.name) + '</div>' : '') +
-      evs.map(ev => '<div class="pe"><i>' + esc(eventLabel(ev, key, firstKey, lastKey)) + '</i>' +
-        esc(ev.text) + '</div>').join("") +
+      evs.map(ev => {
+        const mehrtaegig = ev.end > ev.start;
+        return '<div class="pe' + (mehrtaegig ? " pband" : "") +
+          '" style="border-color:' + (ev.color || "#999") + '"><i>' +
+          esc(eventLabel(ev, key, firstKey, lastKey)) + '</i>' + esc(ev.text) + '</div>';
+      }).join("") +
       (DB.notes[key] ? '<div class="pn">' + esc(DB.notes[key]) + '</div>' : '') +
       '</div>';
   }).join("");
@@ -399,6 +460,7 @@ function start(){
 
   $("#openSettings").onclick = () => {
     $("#gClientId").value = DB.settings.clientId || "";
+    renderCalPicker();
     if (!gToken) gStatus(DB.settings.clientId
       ? "Noch nicht verbunden."
       : "Keine Client-ID hinterlegt — siehe README.md.");
