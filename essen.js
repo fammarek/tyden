@@ -11,7 +11,8 @@ const CATS = {
   suppe:  {n:"Suppe",   c:"#8A5320"}
 };
 const GRP = {g:"Obst & Gemüse", f:"Fleisch & Fisch", m:"Kühlregal", v:"Vorrat", s:"Sonstiges"};
-const UNITS = ["","g","kg","ml","l","EL","TL","Stange","Bund","Kopf","Zweige","Blatt","cm","Prise","Dose"];
+const UNITS = ["","g","kg","ml","l","EL","TL","Stange","Bund","Kopf","Zweige","Blatt","cm","Prise",
+               "Messerspitze","Päckchen","Dose"];
 const FRESH_UNITS = ["Bund","Zweige","Kopf","Stange","Blatt"];
 
 const K_RECS = "tyden.recipes.v1";
@@ -75,6 +76,59 @@ function amount(a, u, port){
   return u ? v + " " + u : v + "×";
 }
 
+/* ---------- Gleiche Zutaten zusammenzählen ----------
+   Kommt dieselbe Zutat in mehreren Rezepten vor, steht sie einmal auf der
+   Liste und die Mengen werden addiert. Kilogramm und Gramm, Liter und
+   Milliliter werden dafür auf eine Basis gebracht. Zwecksätze wie
+   "für den Belag" oder "zum Bestäuben" fallen weg, damit Butter nicht
+   dreimal untereinander auftaucht. Lässt sich eine Einheit nicht umrechnen,
+   etwa Esslöffel neben Gramm, stehen beide Mengen in derselben Zeile. */
+const UNIT_BASE = {g:{b:"g",f:1}, kg:{b:"g",f:1000}, ml:{b:"ml",f:1}, l:{b:"ml",f:1000}};
+function unitInfo(u){
+  const k = String(u == null ? "" : u).trim();
+  return UNIT_BASE[k] || {b:k, f:1};
+}
+const ZWECK = /\s*,?\s*\b(für|fürs|zum|zur|nach)\b\s+.*$/i;
+function canonName(name){
+  let s = String(name == null ? "" : name).normalize("NFC").replace(/\s+/g, " ").trim();
+  s = s.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  const ohne = s.replace(ZWECK, "").trim();
+  if (ohne.length >= 3) s = ohne;
+  return s;
+}
+/* Eine Zutat in die Sammlung einhängen. mult skaliert das ganze Rezept. */
+function addZut(sum, z, mult){
+  const n = canonName(z[0]);
+  if (!n) return;
+  const a = Number(z[1]) || 0, u = z[2] || "", g = z[3] || "s";
+  const key = n.toLowerCase();
+  const inf = unitInfo(u);
+  if (!sum[key]) sum[key] = {key:key, n:n, g:g, u:{}, pantry:true, klein:true};
+  const it = sum[key];
+  if (it.g === "s" && g !== "s") it.g = g;
+  it.u[inf.b] = (it.u[inf.b] || 0) + a * inf.f * (mult || 1);
+  it.pantry = it.pantry && isStaple(n, u);   // frische Ware zieht die Position auf die Liste
+  it.klein = it.klein && KLEIN_UNITS.indexOf(u) >= 0;  // nur Löffel und Prisen, keine Gewichte
+}
+const KLEIN_UNITS = ["Prise","TL","EL","Messerspitze"];
+function fmtEinheit(v, u){
+  if (u === "g"  && v >= 1000) return fmtAmount(v / 1000) + " kg";
+  if (u === "ml" && v >= 1000) return fmtAmount(v / 1000) + " l";
+  if (!u) return fmtAmount(v) + "×";
+  return fmtAmount(v) + " " + u;
+}
+/* Menge einer Position, über alle Einheiten hinweg. port skaliert von 4 hoch. */
+function posText(it, port){
+  const p = (Number(port) || 4) / 4;
+  const rang = {g:0, ml:1, "":2};
+  return Object.keys(it.u)
+    .filter(u => it.u[u])
+    .sort((a, b) => (rang[a] == null ? 8 : rang[a]) - (rang[b] == null ? 8 : rang[b]) ||
+                    a.localeCompare(b, "de"))
+    .map(u => fmtEinheit(it.u[u] * p, u))
+    .join(" + ");
+}
+
 function tintHex(hex, a){
   const h = String(hex).replace("#","");
   const n = parseInt(h, 16);
@@ -85,6 +139,7 @@ function tintHex(hex, a){
 function baseName(name){ return String(name).normalize("NFC").split(",")[0].trim().toLowerCase(); }
 function pantryList(){ return Array.isArray(DB.pantry) ? DB.pantry : DEFAULT_PANTRY; }
 function isStaple(name, unit){
+  if (/^wasser$/i.test(canonName(name))) return true;   // Wasser kauft niemand
   if (FRESH_UNITS.indexOf(unit) >= 0) return false;
   if (/frisch/i.test(name)) return false;
   const b = baseName(name);
@@ -366,12 +421,7 @@ function buildList(){
   Object.values(w.days).concat(Object.values(w.days2 || {})).forEach(id => {
     const r = byId(id);
     if (!r) return;
-    r.zut.forEach(z => {
-      const name = z[0], a = z[1], u = z[2], g = z[3] || "s";
-      const key = name + "|" + u;
-      if (!sum[key]) sum[key] = {key:key, n:name, u:u, g:g, a:0, pantry:isStaple(name, u)};
-      sum[key].a += a;
-    });
+    r.zut.forEach(z => addZut(sum, z, 1));
   });
   const buy = w.buy || {};
   Object.values(sum).forEach(i => { if (buy[i.key]) i.pantry = false; });
@@ -398,7 +448,7 @@ function renderShop(){
       const on = !!w.checked[i.key], id = "ck_" + g + n;
       return '<div class="item' + (on ? " done" : "") + '">' +
         '<input type="checkbox" id="' + id + '" data-k="' + esc(i.key) + '"' + (on ? " checked" : "") + '>' +
-        '<label for="' + id + '"><span>' + esc(i.n) + '</span><b>' + amount(i.a, i.u, port) + '</b></label>' +
+        '<label for="' + id + '"><span>' + esc(i.n) + '</span><b>' + posText(i, port) + '</b></label>' +
         '<button class="mini" data-pantry="' + esc(i.n) + '">Vorrat</button></div>';
     }).join("") + '</div>';
   }).join("");
@@ -407,7 +457,7 @@ function renderShop(){
     html += '<details class="vorrat"><summary>' + vorrat.length +
       ' Positionen aus dem Vorrat — nicht auf der Liste</summary>' +
       vorrat.map(i => '<div class="item pantry"><span class="dotm"></span>' +
-        '<label><span>' + esc(i.n) + '</span><b>' + amount(i.a, i.u, port) + '</b></label>' +
+        '<label><span>' + esc(i.n) + '</span><b>' + posText(i, port) + '</b></label>' +
         '<button class="mini" data-buy="' + esc(i.key) + '">kaufen</button></div>').join("") +
       '</details>';
   }
@@ -436,7 +486,7 @@ function listText(){
   Object.keys(GRP).forEach(g => {
     const it = items.filter(i => i.g === g);
     if (!it.length) return;
-    t += "\n*" + GRP[g] + "*\n" + it.map(i => "• " + i.n + " — " + amount(i.a, i.u, port)).join("\n") + "\n";
+    t += "\n*" + GRP[g] + "*\n" + it.map(i => "• " + i.n + " — " + posText(i, port)).join("\n") + "\n";
   });
   const plan = DAYS.filter(d => w.days[d] || w.free[d] || w.days2[d] || w.free2[d]).map(d => {
     const eins = w.days[d] ? byId(w.days[d]).name : (w.free[d] || "");
@@ -480,6 +530,9 @@ function slugify(s){
 }
 function openEditor(id, preset){
   editId = id;
+  // der Backeditor hängt an denselben Knöpfen, deshalb hier wieder zurückbinden
+  $("#saveDish").onclick = saveDish;
+  $("#delDish").onclick = deleteDish;
   const r = id ? byId(id) : (preset || blankDish());
   $("#editTitle").textContent = id ? r.name : "Neues Gericht";
   $("#editBody").innerHTML =
@@ -621,7 +674,7 @@ function printEinkauf(){
     if (!it.length) return "";
     return '<div class="pgrp"><h4>' + GRP[g] + '</h4>' + it.map(i =>
       '<div class="pi"><span class="pbox"></span><span>' + esc(i.n) + '</span><b>' +
-      amount(i.a, i.u, port) + '</b></div>').join("") + '</div>';
+      posText(i, port) + '</b></div>').join("") + '</div>';
   }).join("");
   const vorrat = items.filter(i => i.pantry).map(i => i.n).join(", ");
   return '<div class="psec">' + printHead("Einkaufsliste") +

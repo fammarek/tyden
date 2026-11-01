@@ -26,15 +26,24 @@ function todoSeiteAktiv(){
   return seiten.some(s => s.id === id) ? id : seiten[0].id;
 }
 
-function todoAdd(text, gruppe){
+function todoAdd(text, gruppe, parent){
   const t = String(text || "").trim();
   if (!t) return null;
   const eintrag = {id: todoId(), text: t, done: false,
-                   gruppe: gruppe || todoSeiteAktiv(), ts: Date.now()};
-  todos().push(eintrag);
+                   gruppe: gruppe || todoSeiteAktiv(), parent: parent || "", ts: Date.now()};
+  if (parent){
+    // Unterpunkte direkt hinter ihren letzten Geschwisterpunkt einsortieren
+    const liste = todos();
+    let pos = liste.findIndex(x => x.id === parent);
+    for (let i = pos + 1; i < liste.length && liste[i].parent === parent; i++) pos = i;
+    liste.splice(pos + 1, 0, eintrag);
+  } else {
+    todos().push(eintrag);
+  }
   save();
   return eintrag;
 }
+function kinderVon(id){ return todos().filter(t => t.parent === id); }
 
 /* Mehrere Zeilen auf einmal, etwa aus einer abgeschriebenen Liste */
 function todoAddMany(text){
@@ -87,31 +96,82 @@ function renderTodos(){
     return;
   }
 
-  box.innerHTML = sichtbar.map((t, i) =>
-    '<div class="item punkt' + (t.done ? " done" : "") + '">' +
-      '<input type="checkbox" id="td_' + i + '" data-id="' + t.id + '"' + (t.done ? " checked" : "") + '>' +
-      '<label for="td_' + i + '"><span>' + esc(t.text) + '</span></label>' +
-      '<button class="mini" data-edit="' + t.id + '">ändern</button>' +
-      '<button class="mini" data-del="' + t.id + '">löschen</button>' +
-    '</div>').join("");
+  let html = "", lfd = 0;
+  alle.filter(t => !t.parent).forEach(t => {
+    const kinder = alle.filter(k => k.parent === t.id);
+    const offeneKinder = kinder.filter(k => !k.done).length;
+    if (versteckt && t.done && !offeneKinder) return;
 
-  $$("#todoList input").forEach(cb => cb.onchange = () => {
+    html += zeileHtml(t, lfd++, false, kinder.length ? offeneKinder + " von " + kinder.length + " offen" : "");
+    kinder.forEach(k => {
+      if (versteckt && k.done) return;
+      html += zeileHtml(k, lfd++, true, "");
+    });
+    html += '<div class="subadd hidden" data-form="' + t.id + '">' +
+      '<input placeholder="Unterpunkt" data-sub="' + t.id + '">' +
+      '<button class="mini" data-subok="' + t.id + '">Hinzufügen</button></div>';
+  });
+  box.innerHTML = html;
+
+  $$("#todoList input[type=checkbox]").forEach(cb => cb.onchange = () => {
     const t = todos().find(x => x.id === cb.dataset.id);
-    if (t){ t.done = cb.checked; save(); renderTodos(); }
+    if (!t) return;
+    t.done = cb.checked;
+    // Oberpunkt abhaken hakt die Unterpunkte gleich mit ab
+    if (!t.parent && cb.checked) kinderVon(t.id).forEach(k => k.done = true);
+    save(); renderTodos();
   });
   $$("#todoList [data-del]").forEach(b => b.onclick = () => {
-    DB.todos = todos().filter(x => x.id !== b.dataset.del);
+    const id = b.dataset.del;
+    DB.todos = todos().filter(x => x.id !== id && x.parent !== id);
     save(); renderTodos();
   });
   $$("#todoList [data-edit]").forEach(b => b.onclick = () => {
     const t = todos().find(x => x.id === b.dataset.edit);
     if (!t) return;
-    const neu = prompt("Punkt ändern:", t.text);
-    if (neu === null) return;
-    if (!neu.trim()){ DB.todos = todos().filter(x => x.id !== t.id); }
-    else t.text = neu.trim();
+    const neuerText = prompt("Punkt ändern:", t.text);
+    if (neuerText === null) return;
+    if (!neuerText.trim()){
+      DB.todos = todos().filter(x => x.id !== t.id && x.parent !== t.id);
+    } else t.text = neuerText.trim();
     save(); renderTodos();
   });
+  $$("#todoList [data-plus]").forEach(b => b.onclick = () => {
+    const form = document.querySelector('[data-form="' + b.dataset.plus + '"]');
+    if (!form) return;
+    form.classList.remove("hidden");
+    form.querySelector("input").focus();
+  });
+  $$("#todoList [data-sub]").forEach(inp => inp.onkeydown = e => {
+    if (e.key === "Enter"){ e.preventDefault(); subSpeichern(inp.dataset.sub); }
+  });
+  $$("#todoList [data-subok]").forEach(b => b.onclick = () => subSpeichern(b.dataset.subok));
+}
+
+function subSpeichern(parentId){
+  const inp = document.querySelector('[data-sub="' + parentId + '"]');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  todoAdd(text, todoSeiteAktiv(), parentId);
+  renderTodos();
+  // Eingabe offen lassen, damit mehrere Unterpunkte am Stück gehen
+  const wieder = document.querySelector('[data-form="' + parentId + '"]');
+  if (wieder){
+    wieder.classList.remove("hidden");
+    wieder.querySelector("input").focus();
+  }
+}
+
+function zeileHtml(t, i, unter, zusatz){
+  return '<div class="item punkt' + (unter ? " unter" : "") + (t.done ? " done" : "") + '">' +
+    '<input type="checkbox" id="td_' + i + '" data-id="' + t.id + '"' + (t.done ? " checked" : "") + '>' +
+    '<label for="td_' + i + '"><span>' + esc(t.text) + '</span>' +
+      (zusatz ? '<b>' + zusatz + '</b>' : '') + '</label>' +
+    (unter ? '' : '<button class="mini plus" data-plus="' + t.id + '" title="Unterpunkt">+</button>') +
+    '<button class="mini" data-edit="' + t.id + '">ändern</button>' +
+    '<button class="mini" data-del="' + t.id + '">löschen</button>' +
+  '</div>';
 }
 
 function initTodos(){
@@ -197,18 +257,29 @@ function initTodos(){
 function printTodos(){
   const alle = todos();
   if (!alle.length) return "";
-  const zeile = t => '<div class="pi"><span class="pbox' + (t.done ? " an" : "") + '"></span>' +
+  const zeile = t => '<div class="pi' + (t.parent ? " punter" : "") + '">' +
+    '<span class="pbox' + (t.done ? " an" : "") + '"></span>' +
     '<span' + (t.done ? ' style="text-decoration:line-through;color:#777"' : '') + '>' +
     esc(t.text) + '</span></div>';
+  const mitKindern = liste => {
+    let out = "";
+    liste.filter(t => !t.parent).forEach(t => {
+      out += zeile(t);
+      alle.filter(k => k.parent === t.id).forEach(k => { out += zeile(k); });
+    });
+    return out;
+  };
   const heute = new Date().toLocaleDateString("de-DE", {day:"numeric", month:"long", year:"numeric"});
 
   const gruppen = todoSeiten().map(s => {
-    const offen = alle.filter(t => t.gruppe === s.id && !t.done);
-    const fertig = alle.filter(t => t.gruppe === s.id && t.done);
-    if (!offen.length && !fertig.length) return "";
+    const aufSeite = alle.filter(t => t.gruppe === s.id);
+    if (!aufSeite.length) return "";
+    const offen = aufSeite.filter(t => !t.done || alle.some(k => k.parent === t.id && !k.done));
+    const fertig = aufSeite.filter(t => offen.indexOf(t) < 0);
     return '<div class="pgrp"><h4>' + esc(s.name) + '</h4>' +
-      offen.map(zeile).join("") +
-      (fertig.length ? '<div class="perledigt">' + fertig.map(zeile).join("") + '</div>' : '') +
+      mitKindern(offen) +
+      (fertig.filter(t => !t.parent).length
+        ? '<div class="perledigt">' + mitKindern(fertig) + '</div>' : '') +
       '</div>';
   }).join("");
 

@@ -18,6 +18,21 @@ function setModell(m){ try { localStorage.setItem(K_MODEL, m || MODEL_STD); } ca
 let letzteAntwort = "";
 let letzteRohantwort = "";   // reiner Text des Modells, ohne HTTP-Hülle
 
+/* Wohin ein erkanntes Rezept geht: in die Gerichte der Woche oder in die
+   Backrezepte. Wird beim Öffnen des Dialogs gesetzt. */
+let KI_ZIEL = "essen";
+function openKI(ziel){
+  KI_ZIEL = (ziel === "backen") ? "backen" : "essen";
+  const backen = KI_ZIEL === "backen";
+  $("#kiTitle").textContent = backen ? "Backrezept mit Claude" : "Mit Claude";
+  $("#kiLbl").textContent = backen ? "Plätzchen, Kuchen, Brot" : "Rezepte und Vorschläge";
+  $("#kiAddTitle").textContent = backen ? "Backrezept hinzufügen" : "Rezept hinzufügen";
+  $("#kiKochen").hidden = backen;
+  $("#aiOut").innerHTML = "";
+  $("#aiStatus").textContent = apiKey() ? "" : "Noch kein API-Schlüssel hinterlegt.";
+  $("#dKI").showModal();
+}
+
 const SCHEMA = `{
   "name": "Name des Gerichts, kurz und auf Deutsch",
   "sub": "ein Satz, der das Gericht oder seinen Kniff beschreibt",
@@ -68,6 +83,59 @@ TIPP
 AUSGABE
 - Ausschließlich das JSON, kein Fließtext davor oder danach, kein Codeblock.
 - Was du nicht sicher erkennst, schätzt du plausibel, statt das Feld leer zu lassen.`;
+
+const SCHEMA_BACK = `{
+  "name": "Name des Gebäcks, kurz und auf Deutsch",
+  "sub": "ein Satz, der das Gebäck oder seinen Kniff beschreibt",
+  "cat": "plaetzchen | brot",
+  "time": Gesamtzeit in Minuten als Zahl, Ruhe- und Gehzeiten eingerechnet,
+  "ergebnis": "die Ausbeute, etwa ca. 50 Stück oder 1 Laib oder 1 Blech",
+  "zut": [["Zutat", Menge als Zahl, "Einheit", "Warengruppe"], ...],
+  "steps": ["Schritt 1", "Schritt 2", ...],
+  "tipp": "ein praktischer Hinweis aus der Backstube"
+}`;
+
+const REGELN_BACK = `So wird das Backrezept aufgeschrieben:
+
+MENGEN
+- Die Mengen gelten für eine Fuhre: ein Blech, einen Laib, eine Dose Plätzchen.
+  Nicht auf Portionen umrechnen, stattdessen die Ausbeute in "ergebnis" nennen.
+- Einheit ist genau eine aus dieser Liste: "", "g", "kg", "ml", "l", "EL", "TL",
+  "Stange", "Bund", "Kopf", "Zweige", "Blatt", "cm", "Prise", "Messerspitze",
+  "Päckchen", "Dose". Ein leerer String bedeutet Stück, also 2 Eier.
+- Beim Backen wird gewogen: Mehl, Zucker, Butter und Nüsse in Gramm, nicht in Tassen.
+  Rechne amerikanische Maße um, eine Tasse Mehl sind etwa 120 g.
+
+ZUTATENNAMEN
+- Grundwort zuerst, Zusatz nach einem Komma: "Mehl, Typ 550".
+- Gleiche Dinge immer gleich benennen, damit der Einkaufszettel sie zusammenzählt.
+  Also durchgehend "Butter", auch wenn sie an zwei Stellen gebraucht wird; wofür
+  sie ist, steht im Schritt.
+- Eier getrennt führen, wenn nur ein Teil gebraucht wird: "Eigelb" oder "Eiweiß".
+
+WARENGRUPPE
+- "g" für Obst und frische Ware, "m" für Kühlregal wie Butter, Milch, Sahne, Eier, Hefe,
+  "v" für Vorrat wie Mehl, Zucker, Nüsse, Backpulver, Kuvertüre, Gewürze.
+
+EINORDNUNG
+- cat = "plaetzchen" für Kleingebäck, Kekse, Makronen, Lebkuchen, Konfekt.
+- cat = "brot" für Brot, Brötchen, Hefeteig, Zopf, Focaccia und alles Herzhafte aus dem Ofen.
+
+SCHRITTE
+- Höchstens sieben Schritte, ganze Sätze, Deutsch, keine Nummerierung im Text.
+- Temperatur, Ober- und Unterhitze oder Umluft und die Backzeit gehören konkret hinein.
+- Ruhe-, Kühl- und Gehzeiten ausdrücklich nennen, sie entscheiden beim Backen über das Ergebnis.
+
+TIPP
+- Ein Satz, der beim Nachbacken wirklich hilft: der häufige Fehler, der richtige
+  Moment, die Vorbereitung am Vortag.
+
+AUSGABE
+- Ausschließlich das JSON, kein Fließtext davor oder danach, kein Codeblock.
+- Was du nicht sicher erkennst, schätzt du plausibel, statt das Feld leer zu lassen.`;
+
+const schema = () => KI_ZIEL === "backen" ? SCHEMA_BACK : SCHEMA;
+const regeln = () => KI_ZIEL === "backen" ? REGELN_BACK : REGELN;
 
 async function askClaude(content, maxTokens){
   const key = apiKey();
@@ -191,8 +259,32 @@ function schrittZeile(s){
   }
   return "";
 }
+/* Dasselbe für ein Backrezept: keine Portionen, keine Wochentage, dafür Ausbeute. */
+function toBake(j){
+  const zutRoh = feld(j, ["zut","zutaten","ingredients","zutatenliste"]) || [];
+  const stepsRoh = feld(j, ["steps","schritte","zubereitung","anleitung","instructions"]) || [];
+  const cat = feld(j, ["cat","kategorie","category"]);
+  const rez = {
+    id: "",
+    name: String(feld(j, ["name","titel","title","gebaeck"]) || "").trim(),
+    sub: String(feld(j, ["sub","untertitel","beschreibung","subtitle"]) || "").trim(),
+    cat: (cat === "brot" || cat === "plaetzchen") ? cat : "plaetzchen",
+    time: Number(feld(j, ["time","zeit","dauer","minuten"])) || 60,
+    ergebnis: String(feld(j, ["ergebnis","ausbeute","yield","menge","stueck"]) || "").trim() || "1 Fuhre",
+    zut: (Array.isArray(zutRoh) ? zutRoh : []).map(zutatZeile).filter(z => z[0]),
+    steps: (Array.isArray(stepsRoh) ? stepsRoh : []).map(schrittZeile).filter(Boolean),
+    tipp: String(feld(j, ["tipp","tip","hinweis","note"]) || "").trim()
+  };
+  if (!rez.name && !rez.zut.length && !rez.steps.length){
+    throw new Error("Aus der Antwort ließ sich kein Backrezept lesen. " +
+      "Die Felder waren leer oder anders benannt. Sieh dir unten die Antwort an.");
+  }
+  if (!rez.name) rez.name = "Ohne Namen";
+  return rez;
+}
 function toDish(j){
   if (!j || typeof j !== "object") throw new Error("Die Antwort war kein Rezeptobjekt.");
+  if (KI_ZIEL === "backen") return toBake(j);
 
   const name = feld(j, ["name","titel","title","gericht"]);
   const zutRoh = feld(j, ["zut","zutaten","ingredients","zutatenliste"]) || [];
@@ -240,7 +332,7 @@ async function recipeFromPhotos(files){
   parts.push({type: "text", text:
     "Auf den Bildern steht ein Rezept, fotografiert aus einem Kochbuch, von einem Zettel oder " +
     "einem Bildschirm. Lies es vollständig, auch wenn es über mehrere Bilder läuft oder schräg " +
-    "fotografiert ist, und übertrage es in dieses JSON:\n" + SCHEMA + "\n\n" + REGELN +
+    "fotografiert ist, und übertrage es in dieses JSON:\n" + schema() + "\n\n" + regeln() +
     "\n\nWenn auf den Bildern mehrere Rezepte stehen, nimm das, das den meisten Platz einnimmt."});
   const txt = await askClaude(parts, 4000);
   letzteRohantwort = txt;
@@ -265,7 +357,7 @@ async function recipeFromText(input){
     "Kommentaren, oder ein eingefügter Rezepttext, oder nur der Wunsch nach einem Gericht. " +
     "Suche das eigentliche Rezept heraus und ignoriere alles Drumherum. Steht dort kein Rezept, " +
     "sondern nur ein Gerichtname, schreibe ein passendes Rezept für einen Familienhaushalt. " +
-    "Gib das Ergebnis in diesem JSON zurück:\n" + SCHEMA + "\n\n" + REGELN +
+    "Gib das Ergebnis in diesem JSON zurück:\n" + schema() + "\n\n" + regeln() +
     "\n\n--- QUELLE ---\n" + quelle}], 4000);
   letzteRohantwort = txt;
   return toDish(parseJson(txt));
@@ -386,7 +478,7 @@ function initClaude(){
       const dish = await recipeFromPhotos(files);
       aiDone();
       $("#dKI").close();
-      openEditor(null, dish);
+      if (KI_ZIEL === "backen") openBakeEditor(null, dish); else openEditor(null, dish);
       toast("Rezept erkannt — bitte prüfen");
     } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
@@ -399,7 +491,7 @@ function initClaude(){
       const dish = await recipeFromText(v);
       aiDone();
       $("#dKI").close();
-      openEditor(null, dish);
+      if (KI_ZIEL === "backen") openBakeEditor(null, dish); else openEditor(null, dish);
       toast("Rezept erkannt — bitte prüfen");
     } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
@@ -436,11 +528,7 @@ function initClaude(){
     } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
 
-  $("#openKI").onclick = () => {
-    $("#aiOut").innerHTML = "";
-    $("#aiStatus").textContent = apiKey() ? "" : "Noch kein API-Schlüssel hinterlegt.";
-    $("#dKI").showModal();
-  };
+  $("#openKI").onclick = () => openKI("essen");
 }
 let stockPhotos = [];
 function aiBusy(t){

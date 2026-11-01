@@ -9,6 +9,60 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.5 — 1. November 2026
+
+**Neu**
+- Eigener Tab **Backen**, ohne Wochenstruktur. Rezepte antippen, über Plus und
+  Minus festlegen, wie oft gebacken wird, und daraus entsteht rechts ein eigener
+  Einkaufszettel — getrennt von der Einkaufsliste der Woche. Gedacht fürs
+  Plätzchenbacken, taugt genauso für einen Backtag mit Brot.
+- 20 Backrezepte: Mürbteigplätzchen, Vanillekipferl, Nussberge, Macarons,
+  Zimtsterne, Kokosmakronen, Spitzbuben, Schwarz-Weiß-Gebäck, Heidesand,
+  Husarenkrapfen, Florentiner, Elisenlebkuchen, Nussecken und Pfeffernüsse,
+  dazu Weizenmischbrot, Dinkel-Vollkornbrot, Sonntagsbrötchen, Laugenbrötchen,
+  Hefezopf und Focaccia.
+- Backrezepte lassen sich selbst anlegen und ändern: "Backrezept +" öffnet einen
+  eigenen Editor mit Kategorie, Ausbeute, Zutaten und Schritten, "Bearbeiten" auf dem
+  Rezeptblatt ändert ein vorhandenes. "Mit Claude" nimmt wie bei den Gerichten ein
+  Foto oder einen Link und legt daraus ein Backrezept an, das vor dem Speichern im
+  Editor liegt. Eigene Rezepte bleiben im Browser; "Exportieren" schreibt den ganzen
+  Bestand als Datei heraus, "Zurücksetzen" stellt den Grundstock wieder her.
+- Die Backliste geht wie die Wocheneinkaufsliste an WhatsApp, in die Zwischenablage
+  und auf Papier. Im Druckdialog stehen dafür zwei neue Haken: der Einkaufszettel
+  und die vollständigen Backrezepte in der gewählten Menge.
+- Beim Backen gilt der Vorrat enger: Mehl, Zucker und Butter gehen kiloweise durch
+  und stehen deshalb auf der Liste. Im Vorrat bleibt nur, was ausschließlich in
+  Prisen und Löffeln vorkommt. Mit "Vorrat" lässt sich jede Position trotzdem
+  von der Liste nehmen.
+
+**Geändert**
+- Gleiche Zutaten aus mehreren Rezepten werden jetzt wirklich zusammengezählt.
+  Kilogramm und Gramm, Liter und Milliliter kommen dafür auf eine Basis — aus
+  800 g und 1,2 kg Mehl wird eine Zeile mit 2 kg. Zusätze wie "für den Belag"
+  oder "zum Bestäuben" fallen beim Zusammenzählen weg, im Rezept stehen sie
+  weiter. Lässt sich eine Einheit nicht umrechnen, stehen beide Mengen in
+  derselben Zeile, etwa "10 g + 2 EL".
+- Wasser steht nie auf einer Einkaufsliste.
+- Zwei Einheiten mehr zur Auswahl: Päckchen und Messerspitze.
+
+**Hinweis**
+- Weil die Positionen jetzt anders zusammengefasst werden, sind die Haken auf der
+  Einkaufsliste der laufenden Woche einmalig zurückgesetzt.
+
+---
+
+## v0.4.1 — 1. November 2026
+
+**Neu**
+- Unterpunkte in den Notizen. Jeder Punkt hat rechts ein kleines Plus vor "ändern"
+  und "löschen"; damit klappt ein Feld auf, in dem sich mehrere Unterpunkte am Stück
+  eintragen lassen. Unterpunkte sind eingerückt und haben ein eigenes Kästchen.
+- Der Oberpunkt zeigt, wie viele seiner Unterpunkte noch offen sind. Hakt man ihn ab,
+  gelten auch die Unterpunkte als erledigt; löscht man ihn, verschwinden sie mit.
+- Auf dem Ausdruck stehen Unterpunkte eingerückt unter ihrem Oberpunkt.
+
+---
+
 ## v0.4 — 1. November 2026
 
 **Neu**
@@ -200,5 +254,5 @@ Erster vollständiger Stand, bereit zum Einsatz auf dem iPad.
 
 ## Geplant
 
-- Review der 52 Rezepte, danach Neudruck des Kartensatzes.
+- Review der 62 Rezepte, danach Neudruck des Kartensatzes.
 - Rezepte für Flammkuchen, Lachsburger und Bratwurstcarbonara ergänzen.

@@ -39,6 +39,7 @@
   <nav class="tabs" id="tabs">
     <button class="tab on" data-tab="woche">Woche</button>
     <button class="tab" data-tab="einkauf">Einkauf</button>
+    <button class="tab" data-tab="backen">Backen</button>
     <button class="tab" data-tab="wochennotizen">Wochennotizen</button>
     <button class="tab" data-tab="notizen">Notizen</button>
   </nav>
@@ -87,6 +88,36 @@
       </div>
     </div>
     <div class="sheetbox" id="shopBody"></div>
+  </section>
+
+  <!-- ---------- Backen: ohne Wochenstruktur ---------- -->
+  <section class="view hidden" id="view-backen">
+    <div class="bar">
+      <h2>Backen</h2>
+      <div class="barcats" id="bakeStats"></div>
+      <div class="baracts">
+        <button class="btn" id="bakeShare">An WhatsApp</button>
+        <button class="btn ghost" id="bakeCopy">Kopieren</button>
+        <button class="btn ghost" id="bakeResetChecks">Haken zurücksetzen</button>
+        <button class="btn ghost" id="bakeClear">Auswahl leeren</button>
+      </div>
+    </div>
+    <div class="backsplit">
+      <div class="bakeleft">
+        <input class="search" id="bakeSearch" type="search" placeholder="Backrezept suchen …">
+        <div class="baracts bakeacts">
+          <button class="btn ghost" id="bakeNew">Backrezept +</button>
+          <button class="btn ghost" id="bakeKI">Mit Claude</button>
+          <button class="btn ghost" id="bakeExport">Exportieren</button>
+          <button class="btn ghost" id="bakeReset">Zurücksetzen</button>
+        </div>
+        <div id="bakeGrid"></div>
+      </div>
+      <div class="sheetbox bakeright">
+        <h3 class="bakehead">Einkaufszettel fürs Backen</h3>
+        <div id="bakeShop"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ---------- Notizen ---------- -->
@@ -241,13 +272,13 @@
 <dialog id="dKI"><div class="sheet">
   <div class="top" style="background:var(--leaf)">
     <button class="x" data-close>&times;</button>
-    <p class="lbl light">Rezepte und Vorschläge</p>
-    <h2>Mit Claude</h2>
+    <p class="lbl light" id="kiLbl">Rezepte und Vorschläge</p>
+    <h2 id="kiTitle">Mit Claude</h2>
   </div>
   <div class="sbody">
     <div id="aiStatus" class="aistatus"></div>
 
-    <h3>Rezept hinzufügen</h3>
+    <h3 id="kiAddTitle">Rezept hinzufügen</h3>
     <p class="hint">Foto einer Kochbuchseite oder eines Zettels, oder ein Link. Das Ergebnis landet
       als ungeprüftes Rezept im Editor — du siehst es vor dem Speichern.</p>
     <div class="baracts" style="margin-bottom:.8rem">
@@ -258,6 +289,7 @@
       <textarea id="linkInput" rows="3" placeholder="https://… oder den Text direkt einfügen"></textarea></div>
     <div class="baracts"><button class="btn ghost" id="fromLink">Daraus ein Rezept machen</button></div>
 
+    <div id="kiKochen">
     <hr>
 
     <h3>Was kann ich damit kochen?</h3>
@@ -272,6 +304,7 @@
       <button class="btn" id="doSuggest">Vorschläge holen</button>
     </div>
     <div id="aiOut"></div>
+    </div>
 
     <hr>
     <h3>Zugang</h3>
@@ -305,6 +338,8 @@
     <label class="chk big"><input type="checkbox" id="pr_wochenplan" checked> Wochenplan mit Terminen</label>
     <label class="chk big"><input type="checkbox" id="pr_essen" checked> Essensplan</label>
     <label class="chk big"><input type="checkbox" id="pr_einkauf" checked> Einkaufsliste</label>
+    <label class="chk big"><input type="checkbox" id="pr_backen"> Backen: Einkaufszettel</label>
+    <label class="chk big"><input type="checkbox" id="pr_backrezepte"> Backrezepte, ausführlich</label>
     <label class="chk big"><input type="checkbox" id="pr_notizen"> Wochennotizen</label>
     <label class="chk big"><input type="checkbox" id="pr_todos"> Notizen, dauerhaft</label>
     <label class="chk big"><input type="checkbox" id="pr_rezepte"> Rezepte der Woche, ausführlich</label>
@@ -360,6 +395,7 @@
 <script src="rezepte.js"></script>
 <script src="app.js"></script>
 <script src="essen.js"></script>
+<script src="backen.js"></script>
 <script src="notizen.js"></script>
 <script src="notizen-fest.js"></script>
 <script src="claude.js"></script>

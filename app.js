@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.4";
+const VERSION = "0.5";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
@@ -54,6 +54,7 @@ function load(){
       DB.settings = Object.assign({lock:2, port:4, clientId:"", cals:[]}, got.settings || {});
       if (!DB.notes) DB.notes = {};
       if (!Array.isArray(DB.pantry)) DB.pantry = DEFAULT_PANTRY.slice();
+      if (!DB.backen || typeof DB.backen !== "object") DB.backen = {sel:{}, checked:{}, buy:{}};
     }
   } catch(e){ memOnly = true; }
 }
@@ -420,6 +421,7 @@ function renderAll(){
   renderShop();
   renderNotes();
   renderTodos();
+  if (typeof renderBacken === "function") renderBacken();
   if (seitenSync) setTimeout(seitenSync, 60);
 }
 function gotoWeek(delta){
@@ -471,6 +473,8 @@ function doPrint(){
   if ($("#pr_wochenplan").checked) parts.push(printWochenplan());
   if ($("#pr_essen").checked)      parts.push(printEssen());
   if ($("#pr_einkauf").checked)    parts.push(printEinkauf());
+  if ($("#pr_backen").checked)     parts.push(printBacken());
+  if ($("#pr_backrezepte").checked) parts.push(printBackRezepte());
   if ($("#pr_rezepte").checked)    parts.push(printRezepte());
   if ($("#pr_notizen").checked)    parts.push(printNotizen());
   if ($("#pr_todos").checked)      parts.push(printTodos());
@@ -617,6 +621,7 @@ function start(){
   $$("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 
   initEssen();
+  initBacken();
   initPad();
   initTodos();
   initClaude();
