@@ -9,6 +9,16 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.2.1 — 1. November 2026
+
+**Behoben**
+- Aktualisierungen kamen auf dem iPad nicht an, weil der Offline-Speicher die alte
+  Fassung festhielt. Die App prüft jetzt beim Start und stündlich auf eine neue
+  Fassung, meldet sie kurz und lädt sich einmal selbst neu. Die Datei `sw.js`
+  wird dabei nie mehr aus dem Zwischenspeicher genommen.
+
+---
+
 ## v0.2 — 1. November 2026
 
 **Neu**

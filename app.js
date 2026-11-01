@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.2";
+const VERSION = "0.2.1";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
@@ -562,7 +562,28 @@ function start(){
   }
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // updateViaCache: "none" sorgt dafür, dass der Browser sw.js nie aus dem Zwischenspeicher nimmt
+    navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).then(reg => {
+      reg.update();
+      setInterval(() => reg.update(), 60 * 60 * 1000);
+      reg.addEventListener("updatefound", () => {
+        const neu = reg.installing;
+        if (!neu) return;
+        neu.addEventListener("statechange", () => {
+          if (neu.state === "installed" && navigator.serviceWorker.controller){
+            toast("Neue Fassung wird geladen …");
+          }
+        });
+      });
+    }).catch(() => {});
+
+    // Sobald die neue Fassung übernimmt, einmal neu laden
+    let schonGeladen = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (schonGeladen) return;
+      schonGeladen = true;
+      location.reload();
+    });
   }
   if (memOnly) toast("Dieser Browser speichert nicht — bitte Sicherung nutzen");
 }
