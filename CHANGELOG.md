@@ -9,6 +9,23 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.1.1 — 1. November 2026
+
+**Behoben**
+- Rezepte aus Foto oder Link konnten als leere Karte im Editor landen, wenn das
+  Modell die Felder anders benannte oder die Zutaten als Objekte statt als Listen
+  lieferte. Die Auswertung erkennt jetzt auch deutsche und englische Feldnamen,
+  Zutaten als Objekt oder als Fließtext und Antworten in Codeblöcken.
+- Eine abgeschnittene oder unbrauchbare Antwort öffnet keine leere Karte mehr,
+  sondern meldet den Grund und zeigt die Antwort des Modells zum Nachlesen.
+- Mehr Platz für die Antwort, damit lange Rezepte nicht mittendrin abbrechen.
+
+**Geändert**
+- Hinweis im Zugang: Für Fotos und verschachtelte Webseiten eignet sich ein
+  Sonnet-Modell besser als ein Haiku-Modell.
+
+---
+
 ## v0.1 — 1. November 2026
 
 Erster vollständiger Stand, bereit zum Einsatz auf dem iPad.

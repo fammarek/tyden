@@ -16,6 +16,7 @@ function setModell(m){ try { localStorage.setItem(K_MODEL, m || MODEL_STD); } ca
 
 /* Letzte Antwort im Rohzustand, damit sich Fehler nachvollziehen lassen */
 let letzteAntwort = "";
+let letzteRohantwort = "";   // reiner Text des Modells, ohne HTTP-Hülle
 
 const SCHEMA = `{
   "name": "Name des Gerichts, kurz und auf Deutsch",
@@ -120,55 +121,103 @@ async function askClaude(content, maxTokens){
   }
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
 }
+/* Holt das erste vollständige JSON-Objekt aus der Antwort. Modelle schreiben gern
+   einen Satz davor, packen Codeblöcke drumherum oder hängen Erklärungen an. */
 function parseJson(text){
-  const a = text.indexOf("{"), b = text.lastIndexOf("}");
-  const c = text.indexOf("["), d = text.lastIndexOf("]");
-  const obj = (a >= 0 && b > a) ? text.slice(a, b + 1) : null;
-  const arr = (c >= 0 && d > c) ? text.slice(c, d + 1) : null;
-  const pick = (obj && (!arr || a < c)) ? obj : arr;
-  return JSON.parse(pick);
-}
-function toDish(j){
-  return {
-    id: "", name: j.name || "Ohne Namen", sub: j.sub || "",
-    cat: ["fleisch","fisch","veg","suppe"].indexOf(j.cat) >= 0 ? j.cat : "veg",
-    win: j.win === "we" ? "we" : "alle",
-    time: Number(j.time) || 30, kh: Number(j.kh) || 0, ok: false,
-    zut: (j.zut || []).map(z => [String(z[0] || ""), Number(z[1]) || 0, String(z[2] || ""), String(z[3] || "v")]),
-    steps: (j.steps || []).map(String),
-    tipp: j.tipp || ""
-  };
+  let t = String(text || "").trim();
+  t = t.replace(/^```(?:json)?/i, "").replace(/```\s*$/,"").trim();
+
+  const start = t.indexOf("{");
+  if (start < 0) throw new Error("Die Antwort enthielt kein JSON.");
+
+  let tiefe = 0, imText = false, escape = false, ende = -1;
+  for (let i = start; i < t.length; i++){
+    const c = t[i];
+    if (escape){ escape = false; continue; }
+    if (c === "\\"){ escape = true; continue; }
+    if (c === '"'){ imText = !imText; continue; }
+    if (imText) continue;
+    if (c === "{") tiefe++;
+    else if (c === "}"){ tiefe--; if (tiefe === 0){ ende = i; break; } }
+  }
+  if (ende < 0) throw new Error("Das JSON war unvollständig, vermutlich wurde die Antwort abgeschnitten.");
+  return JSON.parse(t.slice(start, ende + 1));
 }
 
-/* ---------- Verfügbare Modelle abfragen ----------
-   Welche Modelle ein Schlüssel verwenden darf, hängt am Konto.
-   Statt zu raten, fragen wir die Liste direkt ab. */
-async function modelleHolen(){
-  const key = apiKey();
-  if (!key) throw new Error("Kein API-Schlüssel hinterlegt.");
-  let r;
-  try {
-    r = await fetch("https://api.anthropic.com/v1/models?limit=100", {
-      headers: {
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      }
-    });
-  } catch(netz){
-    const err = new Error(klartext(0, "network", "") + " (" + netz.message + ")");
-    err.roh = "Netzwerkfehler: " + netz.message;
-    throw err;
+/* Dasselbe für Listen, etwa bei den Vorschlägen. */
+function parseJsonArray(text){
+  let t = String(text || "").trim().replace(/^```(?:json)?/i, "").replace(/```\s*$/,"").trim();
+  const start = t.indexOf("[");
+  const ende = t.lastIndexOf("]");
+  if (start < 0 || ende < start) throw new Error("Die Antwort enthielt keine Liste.");
+  return JSON.parse(t.slice(start, ende + 1));
+}
+
+/* Modelle halten sich nicht immer an die Feldnamen. Hier wird eingesammelt,
+   was erkennbar gemeint war, statt eine leere Karte anzulegen. */
+function feld(obj, namen){
+  for (const n of namen){
+    for (const k of Object.keys(obj)){
+      if (k.toLowerCase() === n) return obj[k];
+    }
   }
-  const rohtext = await r.text();
-  letzteAntwort = "HTTP " + r.status + "\n\n" + rohtext;
-  if (!r.ok){
-    const err = new Error("HTTP " + r.status + "\n" + rohtext.slice(0, 300));
-    err.roh = letzteAntwort;
-    throw err;
+  return undefined;
+}
+function zutatZeile(z){
+  if (Array.isArray(z)){
+    return [String(z[0] || ""), Number(z[1]) || 0, String(z[2] || ""), String(z[3] || "v")];
   }
-  const d = JSON.parse(rohtext);
-  return (d.data || []).map(m => ({id: m.id, name: m.display_name || m.id}));
+  if (z && typeof z === "object"){
+    const name = feld(z, ["zutat","name","bezeichnung","ingredient","item"]);
+    const menge = feld(z, ["menge","amount","quantity","anzahl"]);
+    const einheit = feld(z, ["einheit","unit"]);
+    const gruppe = feld(z, ["warengruppe","gruppe","group","kategorie"]);
+    return [String(name || ""), Number(menge) || 0, String(einheit || ""), String(gruppe || "v")];
+  }
+  if (typeof z === "string"){
+    // "250 g gekochter Schinken" auseinandernehmen
+    const m = z.match(/^\s*([\d.,]+)?\s*([A-Za-zÄÖÜäöüß]+)?\s+(.*)$/);
+    if (m && m[1]) return [String(m[3] || z).trim(), parseFloat(m[1].replace(",", ".")) || 0,
+                           (m[2] || "").replace(/^(stück|stk)$/i, ""), "v"];
+    return [z.trim(), 0, "", "v"];
+  }
+  return ["", 0, "", "v"];
+}
+function schrittZeile(s){
+  if (typeof s === "string") return s.replace(/^\s*\d+[.)]\s*/, "").trim();
+  if (s && typeof s === "object"){
+    const t = feld(s, ["schritt","text","anweisung","step","instruction","beschreibung"]);
+    return String(t || "").trim();
+  }
+  return "";
+}
+function toDish(j){
+  if (!j || typeof j !== "object") throw new Error("Die Antwort war kein Rezeptobjekt.");
+
+  const name = feld(j, ["name","titel","title","gericht"]);
+  const zutRoh = feld(j, ["zut","zutaten","ingredients","zutatenliste"]) || [];
+  const stepsRoh = feld(j, ["steps","schritte","zubereitung","anleitung","instructions"]) || [];
+
+  const dish = {
+    id: "", name: String(name || "").trim(),
+    sub: String(feld(j, ["sub","untertitel","beschreibung","subtitle"]) || "").trim(),
+    cat: ["fleisch","fisch","veg","suppe"].indexOf(feld(j, ["cat","kategorie","category"])) >= 0
+         ? feld(j, ["cat","kategorie","category"]) : "veg",
+    win: feld(j, ["win","tage","fenster"]) === "we" ? "we" : "alle",
+    time: Number(feld(j, ["time","zeit","dauer","minuten"])) || 30,
+    kh: Number(feld(j, ["kh","kohlenhydrate","carbs"])) || 0,
+    ok: false,
+    zut: (Array.isArray(zutRoh) ? zutRoh : []).map(zutatZeile).filter(z => z[0]),
+    steps: (Array.isArray(stepsRoh) ? stepsRoh : []).map(schrittZeile).filter(Boolean),
+    tipp: String(feld(j, ["tipp","tip","hinweis","note"]) || "").trim()
+  };
+
+  if (!dish.name && !dish.zut.length && !dish.steps.length){
+    throw new Error("Aus der Antwort ließ sich kein Rezept lesen. " +
+      "Die Felder waren leer oder anders benannt. Sieh dir unten die Antwort an.");
+  }
+  if (!dish.name) dish.name = "Ohne Namen";
+  return dish;
 }
 
 /* ---------- Rezept aus Foto ---------- */
@@ -193,7 +242,8 @@ async function recipeFromPhotos(files){
     "einem Bildschirm. Lies es vollständig, auch wenn es über mehrere Bilder läuft oder schräg " +
     "fotografiert ist, und übertrage es in dieses JSON:\n" + SCHEMA + "\n\n" + REGELN +
     "\n\nWenn auf den Bildern mehrere Rezepte stehen, nimm das, das den meisten Platz einnimmt."});
-  const txt = await askClaude(parts, 2500);
+  const txt = await askClaude(parts, 4000);
+  letzteRohantwort = txt;
   return toDish(parseJson(txt));
 }
 
@@ -216,7 +266,8 @@ async function recipeFromText(input){
     "Suche das eigentliche Rezept heraus und ignoriere alles Drumherum. Steht dort kein Rezept, " +
     "sondern nur ein Gerichtname, schreibe ein passendes Rezept für einen Familienhaushalt. " +
     "Gib das Ergebnis in diesem JSON zurück:\n" + SCHEMA + "\n\n" + REGELN +
-    "\n\n--- QUELLE ---\n" + quelle}], 2500);
+    "\n\n--- QUELLE ---\n" + quelle}], 4000);
+  letzteRohantwort = txt;
   return toDish(parseJson(txt));
 }
 
@@ -249,7 +300,8 @@ async function suggestFromStock(stockText, photos){
     "Antworte ausschließlich mit diesem JSON-Array, ohne Fließtext:\n" +
     '[{"name":"…","aus_kartei":true,"fehlt":["…"],"warum":"ein Satz, warum es gerade passt"}]'});
   const txt = await askClaude(parts, 1500);
-  return parseJson(txt);
+  letzteRohantwort = txt;
+  return parseJsonArray(txt);
 }
 
 /* ---------- Oberfläche ---------- */
@@ -285,7 +337,7 @@ function initClaude(){
         setModell(b.dataset.model);
         toast("Modell gesetzt: " + b.dataset.model);
       });
-    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
+    } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
   $("#testKey").onclick = async () => {
     aiBusy("Verbindung wird geprüft …");
@@ -294,7 +346,7 @@ function initClaude(){
       aiDone();
       $("#aiStatus").className = "aistatus gut";
       $("#aiStatus").textContent = "Verbindung steht. Antwort: " + antwort.trim();
-    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
+    } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
 
   $("#fromPhoto").onclick = () => $("#photoFile").click();
@@ -309,7 +361,7 @@ function initClaude(){
       $("#dKI").close();
       openEditor(null, dish);
       toast("Rezept erkannt — bitte prüfen");
-    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
+    } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
 
   $("#fromLink").onclick = async () => {
@@ -322,7 +374,7 @@ function initClaude(){
       $("#dKI").close();
       openEditor(null, dish);
       toast("Rezept erkannt — bitte prüfen");
-    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
+    } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
 
   $("#stockPhoto").onclick = () => $("#stockFile").click();
@@ -352,9 +404,9 @@ function initClaude(){
         try {
           const dish = await recipeFromText("Schreibe ein Rezept für: " + b.dataset.new);
           aiDone(); $("#dKI").close(); openEditor(null, dish);
-        } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
+        } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
       });
-    } catch(e){ aiError(e.message, e.roh || letzteAntwort); }
+    } catch(e){ aiError(e.message, e.roh || letzteRohantwort || letzteAntwort); }
   };
 
   $("#openKI").onclick = () => {

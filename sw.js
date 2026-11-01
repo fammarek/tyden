@@ -2,7 +2,7 @@
    Netz zuerst, Zwischenspeicher als Rückfall. So bekommst du Aktualisierungen
    sofort und die App läuft trotzdem offline weiter.
    Anfragen an Google und Anthropic gehen immer direkt ins Netz. */
-const CACHE = "tyden-0.1";   // mit VERSION in app.js gleichziehen
+const CACHE = "tyden-0.1.1";   // mit VERSION in app.js gleichziehen
 const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./essen.js",
                "./notizen.js", "./claude.js", "./rezepte.js", "./datenschutz.html",
                "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];

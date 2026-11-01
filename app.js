@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.1";
+const VERSION = "0.1.1";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
