@@ -38,6 +38,7 @@
 
   <nav class="tabs" id="tabs">
     <button class="tab on" data-tab="woche">Woche</button>
+    <button class="tab" data-tab="monat">Monat</button>
     <button class="tab" data-tab="einkauf">Einkauf</button>
     <button class="tab" data-tab="backen">Backen</button>
     <button class="tab" data-tab="wochennotizen">Wochennotizen</button>
@@ -48,6 +49,7 @@
 <main>
   <!-- ---------- Woche: Termine oben, Essen darunter ---------- -->
   <section class="view" id="view-woche">
+    <div class="calstand" id="calStand" hidden></div>
     <div class="weekgrid" id="calGrid"></div>
 
     <div class="bar essenbar">
@@ -73,6 +75,21 @@
       </label>
       <span id="poolInfo"></span>
     </div>
+  </section>
+
+  <!-- ---------- Monat ---------- -->
+  <section class="view hidden" id="view-monat">
+    <div class="bar">
+      <h2>Monat</h2>
+      <div class="barcats" id="monatStats"></div>
+      <div class="baracts">
+        <label class="chk"><input type="checkbox" id="monatGoogle" checked> Google-Termine zeigen</label>
+        <button class="btn" id="vorNeu">Vorhaben +</button>
+      </div>
+    </div>
+    <div class="monat" id="monatGrid"></div>
+    <p class="hint">Auf einen Tag tippen legt ein Vorhaben an, auf einen Balken tippen ändert es.
+      Die Zahl links öffnet die Woche.</p>
   </section>
 
   <!-- ---------- Einkauf ---------- -->
@@ -326,6 +343,33 @@
   </div>
 </div></dialog>
 
+<dialog id="dVor"><div class="sheet">
+  <div class="top" style="background:var(--pine)">
+    <button class="x" data-close>&times;</button>
+    <p class="lbl light">Monat</p>
+    <h2 id="vorTitel">Neues Vorhaben</h2>
+  </div>
+  <div class="sbody">
+    <div class="form">
+      <div class="field"><label class="lbl" for="v_text">Was steht an</label>
+        <input id="v_text" placeholder="z. B. Plätzchen planen und einkaufen"></div>
+      <div class="f2">
+        <div class="field"><label class="lbl" for="v_von">Von</label>
+          <input id="v_von" type="date"></div>
+        <div class="field"><label class="lbl" for="v_bis">Bis</label>
+          <input id="v_bis" type="date"></div>
+      </div>
+      <div class="field"><label class="lbl">Farbe</label><div class="farbwahl" id="v_farben"></div></div>
+      <label class="chk"><input type="checkbox" id="v_done"> erledigt</label>
+    </div>
+  </div>
+  <div class="sfoot">
+    <button class="btn" id="saveVor">Speichern</button>
+    <button class="btn ghost" data-close>Abbrechen</button>
+    <button class="btn ghost" id="delVor" style="margin-left:auto">Löschen</button>
+  </div>
+</div></dialog>
+
 <dialog id="dPrint"><div class="sheet">
   <div class="top" style="background:var(--ink)">
     <button class="x" data-close>&times;</button>
@@ -335,6 +379,7 @@
   <div class="sbody">
     <p class="hint">Bereiche auswählen, dann öffnet sich das Druckfenster. Auf dem iPad wählst du dort
       deinen AirPrint-Drucker.</p>
+    <label class="chk big"><input type="checkbox" id="pr_monat"> Monatsblatt mit Vorhaben</label>
     <label class="chk big"><input type="checkbox" id="pr_wochenplan" checked> Wochenplan mit Terminen</label>
     <label class="chk big"><input type="checkbox" id="pr_essen" checked> Essensplan</label>
     <label class="chk big"><input type="checkbox" id="pr_einkauf" checked> Einkaufsliste</label>
@@ -365,6 +410,12 @@
     <p class="hint">Die Client-ID legst du einmalig in der Google Cloud Console an. Die Anleitung dazu
       steht in der Datei <b>README.md</b> im selben Ordner. Ohne Client-ID funktioniert alles außer der
       Anzeige der Google-Termine.</p>
+    <p class="hint">Google gibt einen Zugang nur für eine Stunde aus; danach erneuert die App ihn still
+      im Hintergrund. Die Termine bleiben in der Zwischenzeit gespeichert, der Stand steht über dem
+      Kalender. Wenn du trotzdem oft neu verbinden musst, hilft auf dem iPad zweierlei:
+      in <b>Einstellungen → Apps → Safari → „Cross-Sitetracking verhindern“</b> ausschalten, und
+      in der Google Cloud Console unter <b>Zielgruppe</b> den Veröffentlichungsstatus von
+      <b>Testen</b> auf <b>Produktion</b> setzen — im Testmodus läuft die Freigabe nach sieben Tagen ab.</p>
     <div id="gCals"></div>
     <hr>
     <h3>Daten</h3>
@@ -396,6 +447,7 @@
 <script src="app.js"></script>
 <script src="essen.js"></script>
 <script src="backen.js"></script>
+<script src="monat.js"></script>
 <script src="notizen.js"></script>
 <script src="notizen-fest.js"></script>
 <script src="claude.js"></script>

@@ -6,7 +6,7 @@
 
 /* Versionsstand. Bei jeder Änderung hier und in sw.js gleich setzen,
    damit der Offline-Speicher die neue Fassung sicher übernimmt. */
-const VERSION = "0.5";
+const VERSION = "0.6";
 
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAYNAME = {Mo:"Montag",Di:"Dienstag",Mi:"Mittwoch",Do:"Donnerstag",Fr:"Freitag",Sa:"Samstag",So:"Sonntag"};
@@ -57,6 +57,7 @@ function load(){
       if (!DB.backen || typeof DB.backen !== "object") DB.backen = {sel:{}, checked:{}, buy:{}};
     }
   } catch(e){ memOnly = true; }
+  evCacheLesen();
 }
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(DB)); }
@@ -142,7 +143,9 @@ function tint(hex, a){
 }
 
 function eventsOn(dayKey){
-  const alle = GOOGLE_EVENTS.filter(e => dayKey >= e.start && dayKey <= e.end);
+  // eigene Vorhaben aus dem Monat stehen in der Woche neben den Google-Terminen
+  const eigen = (typeof vorhabenAlsEvents === "function") ? vorhabenAlsEvents() : [];
+  const alle = GOOGLE_EVENTS.concat(eigen).filter(e => dayKey >= e.start && dayKey <= e.end);
   // Mehrtägige zuerst und in fester Reihenfolge, damit sie nicht im Tag wandern
   const mehr = alle.filter(e => e.end > e.start)
     .sort((a, b) => (a.start + a.id).localeCompare(b.start + b.id));
@@ -192,14 +195,15 @@ function renderCal(){
               const stil = 'style="--c:' + (ev.color || "#2C5140") + ';background:' +
                 tint(ev.color, mehrtaegig ? .2 : .13) + '"';
               return '<div class="ev' + (mehrtaegig ? " band" : "") +
-                (vor ? " cont-l" : "") + (nach ? " cont-r" : "") + '" ' + stil + '>' +
+                (vor ? " cont-l" : "") + (nach ? " cont-r" : "") +
+                (ev.vorhaben ? " vorh" : "") + (ev.erledigt ? " erl" : "") + '" ' + stil + '>' +
                 (mehrtaegig ? '<span class="arrows">' + (vor ? "‹" : "") + (nach ? "›" : "") + '</span>' : '') +
                 '<time>' + esc(eventLabel(ev, key, firstKey, lastKey)) + '</time>' +
                 '<b>' + esc(ev.text) + '</b>' +
                 (ev.note ? '<time>' + esc(ev.note) + '</time>' : '') +
               '</div>';
             }).join("")
-          : '<div class="noev">' + (gToken ? "keine Termine" : "nicht verbunden") + '</div>') +
+          : '<div class="noev">' + ((gToken || EV_STAND) ? "keine Termine" : "nicht verbunden") + '</div>') +
         '<textarea class="daynote" data-note="' + key + '" placeholder="Notiz">' +
           esc(DB.notes[key] || "") + '</textarea>' +
       '</div>';
@@ -220,6 +224,65 @@ function renderCal(){
 
 /* ---------- Google Kalender, nur lesend ---------- */
 let gToken = null, gTokenClient = null;
+
+/* Termine werden auf Vorrat geladen und im Browser behalten. Dadurch steht die
+   Woche auch dann da, wenn der Zugang gerade abgelaufen ist — Google gibt einem
+   Zugangstoken nur eine Stunde, und die stille Erneuerung klappt auf dem iPad
+   nicht immer. Angezeigt wird dann der Stand der letzten Abfrage. */
+const EV_CACHE = "tyden.events.v1";
+let GRANGE = null;      // {min, max} der geladenen Spanne als ISO-Datum
+let EV_STAND = 0;       // Zeitpunkt der letzten erfolgreichen Abfrage
+
+function evCacheLesen(){
+  try {
+    const c = JSON.parse(localStorage.getItem(EV_CACHE) || "null");
+    if (c && Array.isArray(c.ev)){
+      GOOGLE_EVENTS = c.ev;
+      GRANGE = c.min && c.max ? {min: c.min, max: c.max} : null;
+      EV_STAND = c.stand || 0;
+      if (c.farben) GCOLORS = c.farben;
+    }
+  } catch(e){}
+}
+function evCacheSchreiben(){
+  try {
+    localStorage.setItem(EV_CACHE, JSON.stringify({
+      stand: EV_STAND, min: GRANGE && GRANGE.min, max: GRANGE && GRANGE.max,
+      ev: GOOGLE_EVENTS, farben: GCOLORS || null
+    }));
+  } catch(e){}
+}
+/* Steht die gezeigte Woche in der geladenen Spanne und ist der Stand frisch genug? */
+function evDeckung(){
+  if (!GRANGE || !GOOGLE_EVENTS.length && !EV_STAND) return false;
+  const d = weekDates();
+  return d[0].key >= GRANGE.min && d[6].key <= GRANGE.max;
+}
+function standText(){
+  if (!EV_STAND) return "noch nie geladen";
+  const alter = Date.now() - EV_STAND;
+  if (alter < 90 * 1000) return "gerade eben";
+  if (alter < 60 * 60 * 1000) return "vor " + Math.round(alter / 60000) + " Minuten";
+  const d = new Date(EV_STAND);
+  const heute = new Date();
+  const selberTag = d.toDateString() === heute.toDateString();
+  return (selberTag ? "heute " : d.toLocaleDateString("de-DE", {weekday:"short", day:"numeric", month:"numeric"}) + ", ") +
+    d.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"}) + " Uhr";
+}
+/* Zeile über dem Kalender: nur zu sehen, wenn die Termine nicht frisch sind. */
+function renderStand(){
+  const el = $("#calStand");
+  if (!el) return;
+  if (!DB.settings.clientId){ el.hidden = true; return; }
+  const alt = Date.now() - EV_STAND > 2 * 60 * 60 * 1000;
+  if (gToken && !alt){ el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = (EV_STAND
+    ? 'Termine aus dem Zwischenspeicher · Stand ' + esc(standText())
+    : 'Noch keine Termine geladen') +
+    ' <button class="mini" id="standNeu">' + (gToken ? "aktualisieren" : "neu verbinden") + '</button>';
+  $("#standNeu").onclick = () => { if (gToken) refreshAll(true); else gConnect(); };
+}
 
 function gStatus(text, ok){
   const el = $("#gStatus");
@@ -250,20 +313,29 @@ async function gInit(id){
     callback: resp => {
       if (resp && resp.access_token){
         gToken = resp.access_token;
-        try { localStorage.setItem("tyden.gtoken", JSON.stringify({
-          t: gToken, exp: Date.now() + (Number(resp.expires_in || 3600) - 120) * 1000
-        })); } catch(e){}
+        gFehlschlaege = 0;
+        const exp = Date.now() + (Number(resp.expires_in || 3600) - 120) * 1000;
+        try { localStorage.setItem("tyden.gtoken", JSON.stringify({t: gToken, exp: exp})); } catch(e){}
+        planeErneuerung(exp);
         gStatus("Verbunden. Termine werden geladen.", true);
-        loadGoogleEvents().then(renderCal);
+        loadGoogleEvents().then(() => { renderCal(); renderStand(); });
       } else if (!gQuiet){
         gStatus("Anmeldung abgebrochen.");
       }
       gQuiet = false;
     },
     error_callback: () => {
-      // Stille Anmeldung nicht möglich: Google-Sitzung fehlt oder Zugang abgelaufen
-      if (gQuiet) gStatus("Bitte einmal auf „Mit Google verbinden“ tippen.");
+      // Stille Anmeldung nicht möglich: Google-Sitzung fehlt oder der Browser
+      // lässt den unsichtbaren Abgleich nicht zu. Die Termine im Zwischenspeicher
+      // bleiben stehen, nur der Stand altert.
+      if (gQuiet){
+        gFehlschlaege++;
+        if (gFehlschlaege <= 2) setTimeout(gSilent, gFehlschlaege * 8000);
+        else gStatus("Stille Erneuerung geht gerade nicht. Die Termine unten sind vom " +
+                     standText() + ". Einmal auf „Mit Google verbinden“ tippen holt sie frisch.");
+      }
       gQuiet = false;
+      renderStand();
     }
   });
   return true;
@@ -274,7 +346,11 @@ async function gConnect(){
   DB.settings.clientId = id; save();
   if (!(await gInit(id))) return;
   gQuiet = false;
-  gTokenClient.requestAccessToken({prompt: "consent"});
+  gFehlschlaege = 0;
+  // "select_account" statt "consent": die Zustimmung zum Lesezugriff ist erteilt,
+  // es genügt die Auswahl des Kontos.
+  gTokenClient.requestAccessToken({prompt: gErstmals ? "consent" : "select_account"});
+  gErstmals = false;
 }
 /* Holt im Hintergrund ein frisches Zugriffstoken, ohne Fenster und ohne Klick. */
 async function gSilent(){
@@ -284,11 +360,27 @@ async function gSilent(){
   gQuiet = true;
   try { gTokenClient.requestAccessToken({prompt: ""}); } catch(e){ gQuiet = false; }
 }
-let gQuiet = false;
+let gQuiet = false, gFehlschlaege = 0, gErneuerung = null;
+let gErstmals = true;
+/* Rechtzeitig vor Ablauf erneuern, nicht erst danach. */
+function planeErneuerung(exp){
+  clearTimeout(gErneuerung);
+  const vorlauf = Math.max(30 * 1000, exp - Date.now() - 10 * 60 * 1000);
+  gErneuerung = setTimeout(gSilent, vorlauf);
+}
+function tokenRest(){
+  try {
+    const g = JSON.parse(localStorage.getItem("tyden.gtoken") || "null");
+    return g ? g.exp - Date.now() : 0;
+  } catch(e){ return 0; }
+}
 function gDisconnect(){
   gToken = null;
   GOOGLE_EVENTS = [];
-  try { localStorage.removeItem("tyden.gtoken"); } catch(e){}
+  GRANGE = null; EV_STAND = 0;
+  clearTimeout(gErneuerung);
+  try { localStorage.removeItem("tyden.gtoken"); localStorage.removeItem(EV_CACHE); } catch(e){}
+  renderStand();
   gStatus("Getrennt. Es werden keine Google-Termine angezeigt.");
   renderCal();
 }
@@ -298,11 +390,13 @@ async function gFetch(url){
   if (!r.ok) throw new Error("Google antwortet mit " + r.status);
   return r.json();
 }
-async function loadGoogleEvents(){
-  if (!gToken){ GOOGLE_EVENTS = []; return; }
+async function loadGoogleEvents(anker){
+  if (!gToken) return;                     // Zwischenspeicher stehen lassen
   const dates = weekDates();
-  const min = new Date(dates[0].date); min.setUTCDate(min.getUTCDate() - 1);
-  const max = new Date(dates[6].date); max.setUTCDate(max.getUTCDate() + 2);
+  // auf Vorrat laden: fünf Wochen zurück, acht nach vorn. Dann ist beim Blättern
+  // und nach einer Pause etwas da, ohne für jede Woche neu anzufragen.
+  const min = new Date(anker || dates[0].date); min.setUTCDate(min.getUTCDate() - 35);
+  const max = new Date(anker || dates[6].date); max.setUTCDate(max.getUTCDate() + 56);
   try {
     if (!GCOLORS){
       try { GCOLORS = await gFetch("https://www.googleapis.com/calendar/v3/colors"); } catch(e){ GCOLORS = {}; }
@@ -322,7 +416,7 @@ async function loadGoogleEvents(){
     const all = [];
     for (const c of cals){
       const u = "https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(c.id) +
-        "/events?singleEvents=true&orderBy=startTime&maxResults=100" +
+        "/events?singleEvents=true&orderBy=startTime&maxResults=250" +
         "&timeMin=" + encodeURIComponent(min.toISOString()) +
         "&timeMax=" + encodeURIComponent(max.toISOString());
       const d = await gFetch(u);
@@ -348,11 +442,16 @@ async function loadGoogleEvents(){
       });
     }
     GOOGLE_EVENTS = all;
+    GRANGE = {min: iso(min), max: iso(max)};
+    EV_STAND = Date.now();
+    evCacheSchreiben();
     gStatus("Verbunden — " + all.length + " Termine aus " + cals.length + " Kalendern.", true);
   } catch(err){
-    GOOGLE_EVENTS = [];
-    gStatus("Konnte nicht laden: " + err.message);
+    // Nichts wegwerfen: lieber der alte Stand als eine leere Woche
+    gStatus("Konnte nicht laden: " + err.message + (EV_STAND ? " — gezeigt wird der Stand vom " +
+      standText() + "." : ""));
   }
+  renderStand();
 }
 
 /* Das Notizfeld wächst mit dem Text, damit nichts unsichtbar abgeschnitten wird. */
@@ -405,18 +504,29 @@ function setTab(name){
   $$(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === name));
   $$(".view").forEach(v => v.classList.toggle("hidden", v.id !== "view-" + name));
   if (name === "wochennotizen") sizePad();
+  if (name === "monat" && typeof renderMonat === "function"){
+    if (!curMonat) monatSync();
+    renderMonat(); monatTermineHolen();
+  }
+  kopfSchreiben();
   window.scrollTo({top: 0});
   if (seitenSync) setTimeout(seitenSync, 60);
 }
 
 /* ---------- Gesamtausgabe ---------- */
-function renderAll(){
-  applySeason();
+function kopfSchreiben(){
+  if (activeTab === "monat" && typeof monatKopf === "function"){ monatKopf(); return; }
   const mon = mondayOf(cur.year, cur.week);
   const sun = new Date(mon); sun.setUTCDate(mon.getUTCDate() + 6);
   $("#kwTitle").textContent = "KW " + cur.week;
   $("#kwRange").textContent = fmtD(mon) + " – " + fmtD(sun) + sun.getUTCFullYear();
+}
+function renderAll(){
+  applySeason();
+  kopfSchreiben();
+  if (typeof renderMonat === "function") renderMonat();
   renderCal();
+  renderStand();
   renderMeals();
   renderShop();
   renderNotes();
@@ -427,7 +537,9 @@ function renderAll(){
 function gotoWeek(delta){
   cur = shiftWeek(cur, delta);
   renderAll();
-  if (gToken) loadGoogleEvents().then(renderCal);
+  if (gToken && (!evDeckung() || Date.now() - EV_STAND > 15 * 60 * 1000)){
+    loadGoogleEvents().then(renderCal);
+  }
 }
 
 /* ---------- Drucken ---------- */
@@ -470,6 +582,7 @@ function printWochenplan(){
 }
 function doPrint(){
   const parts = [];
+  if ($("#pr_monat").checked)      parts.push(printMonat());
   if ($("#pr_wochenplan").checked) parts.push(printWochenplan());
   if ($("#pr_essen").checked)      parts.push(printEssen());
   if ($("#pr_einkauf").checked)    parts.push(printEinkauf());
@@ -540,7 +653,7 @@ async function refreshAll(laut){
   if (btn) btn.classList.add("spin");
   try {
     if (DB.settings.clientId){
-      if (!gToken) await gSilent();
+      if (!gToken || tokenRest() < 10 * 60 * 1000) await gSilent();
       else await loadGoogleEvents();
     }
     renderAll();
@@ -577,9 +690,15 @@ function start(){
   const vInfo = $("#versionInfo");
   if (vInfo) vInfo.textContent = "Týden v" + VERSION;
 
-  $("#prev").onclick = () => gotoWeek(-1);
-  $("#next").onclick = () => gotoWeek(1);
-  $("#today").onclick = () => { cur = isoWeek(new Date()); renderAll(); if (gToken) loadGoogleEvents().then(renderCal); };
+  $("#prev").onclick = () => activeTab === "monat" ? gotoMonat(-1) : gotoWeek(-1);
+  $("#next").onclick = () => activeTab === "monat" ? gotoMonat(1)  : gotoWeek(1);
+  $("#today").onclick = () => {
+    cur = isoWeek(new Date());
+    monatSync();
+    renderAll();
+    if (activeTab === "monat") monatTermineHolen();
+    else if (gToken) loadGoogleEvents().then(renderCal);
+  };
   $$(".tab").forEach(t => t.onclick = () => setTab(t.dataset.tab));
 
   $("#refresh").onclick = () => refreshAll(true);
@@ -622,6 +741,7 @@ function start(){
 
   initEssen();
   initBacken();
+  initMonat();
   initPad();
   initTodos();
   initClaude();
@@ -634,13 +754,16 @@ function start(){
     try { gespeichert = JSON.parse(localStorage.getItem("tyden.gtoken") || "null"); } catch(e){}
     if (gespeichert && gespeichert.exp > Date.now()){
       gToken = gespeichert.t;
-      loadGoogleEvents().then(renderCal);
-      setTimeout(gSilent, Math.max(5000, gespeichert.exp - Date.now()));
+      planeErneuerung(gespeichert.exp);
+      gErstmals = false;
+      if (!evDeckung() || Date.now() - EV_STAND > 15 * 60 * 1000){
+        loadGoogleEvents().then(() => { renderCal(); renderStand(); });
+      }
     } else {
       gSilent();
     }
-    // stündlich leise nachfassen, damit der Zugang nie abläuft
-    setInterval(gSilent, 50 * 60 * 1000);
+    // alle 45 Minuten leise nachfassen, damit der Zugang gar nicht erst abläuft
+    setInterval(() => { if (tokenRest() < 15 * 60 * 1000) gSilent(); }, 45 * 60 * 1000);
   }
 
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

@@ -503,3 +503,85 @@ body.hat-balken .site{padding-right:3.2rem}
 .bakefoot b{font-weight:400;font-size:.78rem;color:var(--muted);min-width:1.8rem;text-align:center}
 .bakefoot .mini:last-child{margin-left:auto}
 .bakeacts{margin:-.3rem 0 .9rem}
+
+/* Hinweiszeile über dem Kalender, wenn die Termine nicht frisch sind */
+.calstand[hidden]{display:none}
+.calstand{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;
+  font-size:.78rem;color:var(--muted);background:rgba(228,169,60,.14);
+  border:1px solid rgba(228,169,60,.5);border-radius:999px;padding:.35rem .9rem}
+
+/* ---------- Monat ----------
+   Acht Spalten: links die Kalenderwoche, dann Montag bis Sonntag.
+   Jede Wochenzeile hat oben die Tagesköpfe und darunter so viele Spuren,
+   wie Balken nebeneinander liegen. */
+.monat{background:rgba(255,255,255,.62);border:1px solid var(--line);border-radius:12px;
+  padding:.5rem .6rem .7rem;overflow:hidden}
+.mkopf,.mrow{display:grid;grid-template-columns:2.1rem repeat(7,minmax(0,1fr));gap:0}
+.mkopf{margin-bottom:.25rem}
+.mkopf span{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  padding:.2rem .35rem;text-align:left}
+.mkopf span:nth-child(7),.mkopf span:nth-child(8){color:var(--wine,#6B2D4E)}
+.mrow{margin-bottom:.3rem;position:relative}
+.mkw{grid-column:1;grid-row:1/-1;font-size:.68rem;color:var(--muted);align-self:stretch;
+  border:none;background:transparent;padding-top:.45rem}
+.mkw:active{color:var(--ink)}
+.mbg{grid-row:1/-1;border:1px solid var(--line);border-radius:4px;margin:0 1px;
+  background:rgba(255,255,255,.5)}
+.mbg.aus{background:transparent;border-color:rgba(27,42,33,.09)}
+.mbg.we{background:rgba(27,42,33,.035)}
+.mbg.heute{border-color:var(--ink);border-width:1.6px}
+.mhead{padding:.25rem .35rem .1rem;display:flex;flex-direction:column;gap:.12rem;
+  position:relative;z-index:1;min-height:2.6rem;pointer-events:none}
+.mnum{font-family:var(--serif);font-size:1rem;line-height:1}
+.mhead.aus{opacity:.42}
+.mhead .mnum.frei{color:#9C3B36}
+.mfeier{font-size:.56rem;line-height:1.15;color:var(--muted)}
+.mev{font-size:.62rem;line-height:1.2;padding-left:.3rem;border-left:2.5px solid var(--c);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mev b{font-weight:400;color:var(--muted)}
+.mbar{position:relative;z-index:1;margin:0 2px 2px;padding:.1rem .4rem;border-radius:3px;
+  border-left:2.5px solid var(--c);color:var(--ink);font-size:.7rem;line-height:1.25;
+  white-space:nowrap;overflow:hidden;display:flex;align-items:center;gap:.25rem}
+.mbar span{overflow:hidden;text-overflow:ellipsis}
+.mbar.goo{font-style:italic;border-left-style:dotted}
+.mbar.erl{opacity:.45;text-decoration:line-through}
+.mbar.offl{border-left:none;border-radius:0 3px 3px 0;margin-left:0}
+.mbar.offr{border-radius:3px 0 0 3px;margin-right:0}
+.mbar .pfeil{margin-left:auto;font-size:.6rem;color:var(--c)}
+@media(max-width:800px){
+  .mhead{min-height:2.1rem}
+  .mnum{font-size:.85rem}
+  .mev,.mfeier{display:none}
+}
+.farbwahl{display:flex;gap:.4rem}
+.fchip{width:1.9rem;height:1.9rem;border-radius:50%;border:2px solid transparent}
+.fchip.on{border-color:var(--ink);transform:scale(1.12)}
+.vdot{display:inline-block;width:.55rem;height:.55rem;border-radius:50%;margin-right:.45rem}
+.pages button.feste{border-style:dashed}
+/* Vorhaben in der Wochenansicht */
+.ev.vorh{border-left-style:solid}
+.ev.erl{opacity:.45;text-decoration:line-through}
+
+@media print{
+  .pmonat{width:100%}
+  .pmkopf,.pmrow{display:grid;grid-template-columns:7mm repeat(7,1fr)}
+  .pmkopf span{font-size:7pt;letter-spacing:.1em;text-transform:uppercase;color:#666;padding:0 1mm 1mm}
+  .pmrow{margin-bottom:1mm;break-inside:avoid}
+  .pmhead.aus{opacity:.45}
+  .pmkw{grid-column:1;grid-row:1/-1;font-size:7pt;color:#777;padding-top:1.5mm}
+  .pmbg{grid-row:1/-1;border:.5pt solid #999;margin:0 .3mm;border-radius:1mm}
+  .pmbg.aus{border-color:#ddd}
+  .pmhead{grid-row:1;padding:1mm 1.2mm 0;position:relative;min-height:13mm}
+  .pmhead b{font-family:var(--serif);font-size:10pt;font-weight:400}
+  .pmhead b.frei{color:#9C3B36}
+  .pmhead i{display:block;font-style:normal;font-size:5.5pt;color:#777;line-height:1.2}
+  .pmhead u{display:block;text-decoration:none;font-size:6pt;line-height:1.25;
+    border-left:1.2pt solid #666;padding-left:.8mm;margin-top:.5mm;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pmbar{position:relative;margin:0 .6mm .6mm;padding:.3mm 1.2mm;font-size:7pt;line-height:1.3;
+    border-left:1.5pt solid #666;border-radius:.8mm;white-space:nowrap;overflow:hidden;
+    display:flex;align-items:center;gap:1.5mm}
+  .pmbar span{overflow:hidden;text-overflow:ellipsis}
+  .pmbar i{margin-left:auto;font-style:normal;font-size:6pt}
+  .pmbar.erl{opacity:.5;text-decoration:line-through}
+}

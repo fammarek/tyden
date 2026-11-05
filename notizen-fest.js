@@ -23,6 +23,7 @@ function todoSeiten(){
 function todoSeiteAktiv(){
   const seiten = todoSeiten();
   const id = DB.settings.todoPage;
+  if (id === "vorhaben" && typeof vorhabenOffen === "function") return id;
   return seiten.some(s => s.id === id) ? id : seiten[0].id;
 }
 
@@ -69,14 +70,29 @@ function renderTodos(){
   DB.settings.todoPage = aktiv;
   const leiste = $("#todoPages");
   if (leiste){
-    leiste.innerHTML = seiten.map(s => {
+    let chips = seiten.map(s => {
       const n = todos().filter(t => t.gruppe === s.id && !t.done).length;
       return '<button data-page="' + s.id + '"' + (s.id === aktiv ? ' class="on"' : '') + '>' +
         esc(s.name) + (n ? ' <i>' + n + '</i>' : '') + '</button>';
     }).join("");
+    // feste Seite mit den Vorhaben aus dem Monat
+    if (typeof vorhabenOffen === "function"){
+      const n = vorhabenOffen();
+      chips += '<button data-page="vorhaben" class="feste' + (aktiv === "vorhaben" ? " on" : "") +
+        '">Aus dem Monat' + (n ? ' <i>' + n + '</i>' : '') + '</button>';
+    }
+    leiste.innerHTML = chips;
     $$("#todoPages button").forEach(b => b.onclick = () => {
       DB.settings.todoPage = b.dataset.page; save(); renderTodos();
     });
+  }
+
+  // Die Vorhaben werden im Monat gepflegt, hier nur abgehakt
+  if (aktiv === "vorhaben" && typeof renderVorhabenListe === "function"){
+    const hb = $("#todoHide");
+    if (hb) hb.textContent = DB.settings.todoHide ? "Erledigte zeigen" : "Erledigte ausblenden";
+    renderVorhabenListe(box);
+    return;
   }
 
   const alle = todos().filter(t => t.gruppe === aktiv);
@@ -187,6 +203,7 @@ function initTodos(){
   };
   $("#todoPageRename").onclick = () => {
     const seiten = todoSeiten(), aktiv = todoSeiteAktiv();
+    if (aktiv === "vorhaben"){ toast("Diese Seite kommt aus dem Monat"); return; }
     const s = seiten.find(x => x.id === aktiv);
     const name = prompt("Seite umbenennen:", s.name);
     if (name === null || !name.trim()) return;
@@ -195,6 +212,7 @@ function initTodos(){
   };
   $("#todoPageDel").onclick = () => {
     const seiten = todoSeiten(), aktiv = todoSeiteAktiv();
+    if (aktiv === "vorhaben"){ toast("Diese Seite kommt aus dem Monat"); return; }
     if (seiten.length <= 1){ toast("Die letzte Seite bleibt bestehen"); return; }
     const s = seiten.find(x => x.id === aktiv);
     const anzahl = todos().filter(t => t.gruppe === aktiv).length;
@@ -206,6 +224,10 @@ function initTodos(){
   };
 
   $("#todoAdd").onclick = () => {
+    if (todoSeiteAktiv() === "vorhaben"){
+      toast("Vorhaben werden im Tab Monat eingetragen");
+      return;
+    }
     const n = todoAddMany(feld.value);
     if (n){ feld.value = ""; renderTodos(); }
     feld.focus();
@@ -219,6 +241,10 @@ function initTodos(){
     save(); renderTodos();
   };
   $("#todoClearDone").onclick = () => {
+    if (todoSeiteAktiv() === "vorhaben"){
+      toast("Erledigte Vorhaben werden im Monat gelöscht");
+      return;
+    }
     const weg = todos().filter(t => t.done).length;
     if (!weg) { toast("Nichts erledigt"); return; }
     if (!confirm(weg + " erledigte Punkte entfernen?")) return;
@@ -283,7 +309,16 @@ function printTodos(){
       '</div>';
   }).join("");
 
+  let ausMonat = "";
+  if (typeof vorhaben === "function" && vorhaben().length){
+    const sort = vorhaben().slice().sort((a, b) => a.von.localeCompare(b.von));
+    ausMonat = '<div class="pgrp"><h4>Aus dem Monat</h4>' + sort.map(v =>
+      '<div class="pi"><span class="pbox' + (v.done ? " an" : "") + '"></span>' +
+      '<span' + (v.done ? ' style="text-decoration:line-through;color:#777"' : '') + '>' +
+      esc(v.text) + '</span><b>' + esc(spanneText(v)) + '</b></div>').join("") + '</div>';
+  }
+
   return '<div class="psec">' +
     '<div class="phead"><h1>Notizen</h1><span>Stand ' + heute + '</span></div>' +
-    '<div class="pcols">' + gruppen + '</div></div>';
+    '<div class="pcols">' + gruppen + ausMonat + '</div></div>';
 }

@@ -9,6 +9,62 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.6 — 5. November 2026
+
+**Neu**
+- Eigener Tab **Monat**: das ganze Blatt auf einen Blick, Montag bis Sonntag,
+  links die Kalenderwoche. Die Zahl links öffnet die zugehörige Woche.
+  Vor und Zurück im Kopf blättern hier monatsweise statt wochenweise.
+- **Vorhaben**: eigene Einträge mit Namen, von–bis und Farbe, die als durchgehender
+  Balken über die Tage laufen — genau wie mit dem Stift auf dem Wandkalender.
+  Auf einen Tag tippen legt eines an, auf einen Balken tippen ändert oder löscht es.
+  Läuft ein Vorhaben über das Wochenende hinaus, steht am Rand ein Pfeil.
+  Mehrere Vorhaben am selben Tag rücken untereinander, nichts überdeckt etwas.
+- Vorhaben sind **abhakbar**. Erledigtes bleibt stehen, nur durchgestrichen und blasser.
+- Im Tab **Notizen** gibt es dafür die feste Seite "Aus dem Monat": alle Vorhaben
+  nach Datum, zum Abhaken. Geändert und gelöscht wird im Monat, dort stehen die Daten.
+- Die **Google-Termine** lassen sich im Monat mit einem Haken ein- und ausblenden.
+  Mehrtägige laufen als gepunkteter Balken mit, eintägige stehen klein im Tagesfeld.
+  Die Auswahl, welche Kalender gezeigt werden, gilt weiter aus den Einstellungen.
+- **Feiertage und Merktage** für Baden-Württemberg stehen im Monat: gesetzliche
+  Feiertage rot, dazu Reformationstag, die vier Advente, Heiligabend und Silvester.
+- **Monatsblatt drucken**, A4 quer, als eigener Haken im Druckdialog. Die Vorhaben
+  stehen zusätzlich auf dem Notizen-Ausdruck.
+
+**Geändert**
+- Vorhaben erscheinen auch in der Wochenansicht oben bei den Terminen und auf dem
+  gedruckten Wochenplan.
+- Beim Blättern in weit entfernte Monate werden die Google-Termine für diesen
+  Zeitraum nachgeladen.
+
+---
+
+## v0.5.1 — 2. November 2026
+
+**Geändert**
+- Die Google-Termine bleiben jetzt im Browser liegen. Läuft der Zugang ab — Google
+  gibt ihn nur für eine Stunde aus —, steht die Woche trotzdem vollständig da.
+  Über dem Kalender erscheint dann eine Zeile mit dem Stand der letzten Abfrage
+  und einem Knopf zum Erneuern. Vorher war der Kalender in dem Moment leer, was
+  sich anfühlte, als wäre die Anmeldung weg.
+- Termine werden auf Vorrat geladen: fünf Wochen zurück, acht nach vorn. Beim
+  Blättern wird nur noch nachgefragt, wenn die Woche außerhalb dieser Spanne liegt
+  oder der Stand älter als eine Viertelstunde ist.
+- Der Zugang erneuert sich jetzt zehn Minuten vor Ablauf statt erst danach, und
+  nach einem Fehlschlag zweimal mit Abstand noch einmal.
+- "Mit Google verbinden" fragt nur noch nach dem Konto statt jedes Mal nach der
+  Zustimmung zum Lesezugriff.
+- Beim Trennen wird auch der Zwischenspeicher gelöscht.
+
+**Hinweis**
+- Dauerhaft angemeldet bleiben kann eine Seite ohne eigenen Server nicht; Google
+  vergibt dafür kein unbefristetes Token. Hilft zusätzlich: in Safari
+  "Cross-Sitetracking verhindern" ausschalten und in der Google Cloud Console den
+  Veröffentlichungsstatus auf Produktion setzen. Beides steht jetzt im
+  Einstellungsdialog.
+
+---
+
 ## v0.5 — 1. November 2026
 
 **Neu**
