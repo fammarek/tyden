@@ -1,4 +1,4 @@
-# Týden · Wochenplan — v0.6
+# Týden · Wochenplan — v0.6.1
 
 Ein Wochenplaner fürs iPad: Kalender, Essensplan, Einkaufsliste und ein Notizblock
 für den Apple Pencil. Alles liegt in einer statischen Webseite, die Daten bleiben
@@ -14,6 +14,7 @@ auf dem Gerät.
 | `essen.js` | Essensplan, Würfellogik, Rezeptkartei, Einkaufsliste |
 | `backen.js` | **Die Backrezepte**, der Backen-Tab und sein Einkaufszettel |
 | `monat.js` | Monatsübersicht, Vorhaben als Balken, Feiertage |
+| `tasten.js` | Sonderzeichenleiste über der Tastatur |
 | `notizen.js` | Zeichenfläche für den Pencil |
 | `notizen-fest.js` | Dauerhafte Notizen mit Seiten und Unterpunkten |
 | `claude.js` | Rezept aus Foto oder Link, Vorschläge aus dem Vorrat |

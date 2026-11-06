@@ -153,7 +153,7 @@
         <button class="tool" id="undo" title="Rückgängig">&#8630;</button>
         <button class="tool" id="clearPage" title="Seite leeren">&#128465;</button>
         <button class="btn ghost" id="notePhoto">Foto abschreiben</button>
-        <input type="file" id="noteFile" accept="image/*" capture="environment" multiple hidden>
+        <input type="file" id="noteFile" accept="image/*" multiple hidden>
         <button class="btn ghost" id="addPage">Seite +</button>
         <button class="btn ghost" id="delPage">Seite entfernen</button>
       </div>
@@ -161,7 +161,7 @@
     <div class="canvasrow">
       <div class="canvaswrap">
         <div class="padstack">
-          <textarea id="padText" class="hinten" spellcheck="false" placeholder="Hier tippen …"></textarea>
+          <textarea id="padText" class="hinten" lang="de" placeholder="Hier tippen …"></textarea>
           <canvas id="pad"></canvas>
         </div>
       </div>
@@ -184,7 +184,7 @@
         <button class="btn ghost" id="todoPageRename">Umbenennen</button>
         <button class="btn ghost" id="todoPageDel">Seite entfernen</button>
         <button class="btn ghost" id="todoPhoto">Foto abschreiben</button>
-        <input type="file" id="todoFile" accept="image/*" capture="environment" multiple hidden>
+        <input type="file" id="todoFile" accept="image/*" multiple hidden>
         <button class="btn ghost" id="todoHide">Erledigte ausblenden</button>
         <button class="btn ghost" id="todoClearDone">Erledigte entfernen</button>
         <span class="notestatus" id="todoStatus"></span>
@@ -300,7 +300,7 @@
       als ungeprüftes Rezept im Editor — du siehst es vor dem Speichern.</p>
     <div class="baracts" style="margin-bottom:.8rem">
       <button class="btn ghost" id="fromPhoto">Foto aufnehmen oder wählen</button>
-      <input type="file" id="photoFile" accept="image/*" capture="environment" multiple hidden>
+      <input type="file" id="photoFile" accept="image/*" multiple hidden>
     </div>
     <div class="field"><label class="lbl">Link oder eingefügter Rezepttext</label>
       <textarea id="linkInput" rows="3" placeholder="https://… oder den Text direkt einfügen"></textarea></div>
@@ -316,7 +316,7 @@
       <textarea id="stockText" rows="3" placeholder="z. B. Hähnchenbrust, Zucchini, Feta, Sahne"></textarea></div>
     <div class="baracts">
       <button class="btn ghost" id="stockPhoto">Foto vom Vorrat</button>
-      <input type="file" id="stockFile" accept="image/*" capture="environment" multiple hidden>
+      <input type="file" id="stockFile" accept="image/*" multiple hidden>
       <span class="hint" id="stockHint" style="margin:0"></span>
       <button class="btn" id="doSuggest">Vorschläge holen</button>
     </div>
@@ -441,6 +441,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="umlaute" id="umlaute" hidden></div>
 <div id="print"></div>
 
 <script src="rezepte.js"></script>
@@ -448,6 +449,7 @@
 <script src="essen.js"></script>
 <script src="backen.js"></script>
 <script src="monat.js"></script>
+<script src="tasten.js"></script>
 <script src="notizen.js"></script>
 <script src="notizen-fest.js"></script>
 <script src="claude.js"></script>

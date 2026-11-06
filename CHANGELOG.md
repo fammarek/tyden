@@ -9,6 +9,35 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.6.1 — 6. November 2026
+
+**Behoben**
+- Beim Fotografieren ließ sich kein vorhandenes Bild aus der Mediathek wählen.
+  Die Felder forderten ausdrücklich die Kamera an. Jetzt fragt das iPad wie
+  gewohnt: Fotomediathek, Foto aufnehmen oder Datei auswählen. Betrifft alle
+  vier Stellen — Rezept aus Foto, Vorrat abfotografieren, Wochennotizen und
+  Notizen abschreiben.
+
+**Neu**
+- Leiste mit Sonderzeichen über der Tastatur: ä ö ü ß und die großen dazu,
+  Gedankenstrich und Anführungszeichen. Ein Knopf rechts schaltet auf die
+  tschechischen Buchstaben um (á č ď é ě í ň ó ř š ť ú ů ý ž) und zurück.
+  Sie erscheint, sobald ein Textfeld offen ist, sitzt direkt über der
+  Bildschirmtastatur und schreibt an der Stelle, an der die Schreibmarke steht.
+  Auch in den Dialogen, etwa im Rezepteditor.
+
+**Geändert**
+- Im Notizblock sind Korrektur und Vorschläge wieder eingeschaltet, dazu auf
+  Deutsch. Damit wird aus "strasse" auch wieder "Straße".
+
+**Hinweis**
+- Welche Tastatur das iPad zeigt, kann eine Web-App nicht bestimmen. Der Globus
+  zum Umschalten erscheint erst, wenn mehr als eine Tastatur eingerichtet ist:
+  Einstellungen → Allgemein → Tastatur → Tastaturen → Tastatur hinzufügen →
+  Deutsch. Bei einer angesteckten Tastatur wechselt Strg + Leertaste die Sprache.
+
+---
+
 ## v0.6 — 5. November 2026
 
 **Neu**
