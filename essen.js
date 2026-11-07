@@ -427,21 +427,44 @@ function buildList(){
   Object.values(sum).forEach(i => { if (buy[i.key]) i.pantry = false; });
   return Object.values(sum).sort((x, y) => x.n.localeCompare(y.n, "de"));
 }
+/* ---------- Eigene Punkte ----------
+   Alles, was kein Rezept mitbringt: Spülmittel, Briefmarken, Blumen für Oma.
+   Sie hängen an der Woche und stehen unten auf der Liste. */
+function extras(w){
+  if (!Array.isArray(w.extra)) w.extra = [];
+  return w.extra;
+}
+function extraAdd(w, text){
+  const zeilen = String(text || "").split("\n").map(z => z.trim()).filter(Boolean);
+  zeilen.forEach(z => extras(w).push({id: "x" + Date.now() + extras(w).length, text: z}));
+  return zeilen.length;
+}
+function extraHtml(w, liste, checked){
+  if (!liste.length) return "";
+  return '<div class="grp"><h4 class="lbl">Zusätzlich</h4>' + liste.map((x, n) => {
+    const key = "x:" + x.id, on = !!checked[key], id = "cx_" + n + "_" + x.id;
+    return '<div class="item' + (on ? " done" : "") + '">' +
+      '<input type="checkbox" id="' + id + '" data-k="' + esc(key) + '"' + (on ? " checked" : "") + '>' +
+      '<label for="' + id + '"><span>' + esc(x.text) + '</span></label>' +
+      '<button class="mini" data-xdel="' + x.id + '">weg</button></div>';
+  }).join("") + '</div>';
+}
+
 function renderShop(){
   const w = week(keyOf(cur)), items = buildList(), port = Number(DB.settings.port);
   const kauf = items.filter(i => !i.pantry);
   const vorrat = items.filter(i => i.pantry);
-  const open = kauf.filter(i => !w.checked[i.key]).length;
+  const open = kauf.filter(i => !w.checked[i.key]).length +
+               extras(w).filter(x => !w.checked["x:" + x.id]).length;
 
   $("#shopStats").textContent = Object.keys(w.days).length + " Gerichte · " + port + " Portionen · " +
     open + " offen · " + vorrat.length + " aus dem Vorrat";
 
   const body = $("#shopBody");
-  if (!items.length){
-    body.innerHTML = '<p class="hint">Noch keine Gerichte geplant. Im Tab Essen eine Woche würfeln.</p>';
-    return;
-  }
-  let html = Object.keys(GRP).map(g => {
+  let html = (!items.length && !extras(w).length)
+    ? '<p class="hint">Noch keine Gerichte geplant. Im Tab Woche eine Woche würfeln — ' +
+      'oder unten eigene Punkte eintragen.</p>'
+    : Object.keys(GRP).map(g => {
     const it = kauf.filter(i => i.g === g);
     if (!it.length) return "";
     return '<div class="grp"><h4 class="lbl">' + GRP[g] + '</h4>' + it.map((i, n) => {
@@ -461,9 +484,29 @@ function renderShop(){
         '<button class="mini" data-buy="' + esc(i.key) + '">kaufen</button></div>').join("") +
       '</details>';
   }
+  html += extraHtml(w, extras(w), w.checked);
+  html += '<div class="eigen"><input id="extraFeld" placeholder="Eigener Punkt, etwa Spülmittel">' +
+          '<button class="btn ghost" id="extraAdd">+</button></div>';
   body.innerHTML = html;
 
-  $$("#shopBody input").forEach(cb => cb.onchange = () => {
+  const feld = $("#extraFeld");
+  const dazu = () => {
+    const n = extraAdd(week(keyOf(cur)), feld.value);
+    if (!n){ feld.focus(); return; }
+    feld.value = "";
+    save(); renderShop();
+    const neu = $("#extraFeld"); if (neu) neu.focus();
+  };
+  $("#extraAdd").onclick = dazu;
+  feld.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); dazu(); } };
+  $$("#shopBody [data-xdel]").forEach(b => b.onclick = () => {
+    const w2 = week(keyOf(cur));
+    w2.extra = extras(w2).filter(x => x.id !== b.dataset.xdel);
+    delete w2.checked["x:" + b.dataset.xdel];
+    save(); renderShop();
+  });
+
+  $$("#shopBody input[type=checkbox]").forEach(cb => cb.onchange = () => {
     const w2 = week(keyOf(cur));
     if (cb.checked) w2.checked[cb.dataset.k] = 1; else delete w2.checked[cb.dataset.k];
     save(); renderShop();
@@ -481,13 +524,15 @@ function renderShop(){
 function listText(){
   const w = week(keyOf(cur)), port = Number(DB.settings.port);
   const items = buildList().filter(i => !i.pantry && !w.checked[i.key]);
-  if (!items.length) return null;
+  const eigene = extras(w).filter(x => !w.checked["x:" + x.id]);
+  if (!items.length && !eigene.length) return null;
   let t = "Einkauf KW " + cur.week + " (" + port + " Portionen)\n";
   Object.keys(GRP).forEach(g => {
     const it = items.filter(i => i.g === g);
     if (!it.length) return;
     t += "\n*" + GRP[g] + "*\n" + it.map(i => "• " + i.n + " — " + posText(i, port)).join("\n") + "\n";
   });
+  if (eigene.length) t += "\n*Zusätzlich*\n" + eigene.map(x => "• " + x.text).join("\n") + "\n";
   const plan = DAYS.filter(d => w.days[d] || w.free[d] || w.days2[d] || w.free2[d]).map(d => {
     const eins = w.days[d] ? byId(w.days[d]).name : (w.free[d] || "");
     const zwei = w.days2[d] ? byId(w.days2[d]).name : (w.free2[d] || "");
@@ -525,7 +570,11 @@ function blankDish(){
   return {id:"", name:"", cat:"veg", win:"alle", time:30, kh:10, ok:false, sub:"", zut:[["",0,"","g"]], steps:[], tipp:""};
 }
 function slugify(s){
-  return s.toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+  // Erst die deutschen Umlaute ausschreiben, dann alles Übrige entakzentuieren.
+  // Sonst wird aus "Eňo-ňuňo" die Kennung "e-o-u-o".
+  return String(s).toLowerCase()
+    .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || ("gericht-" + Date.now());
 }
 function openEditor(id, preset){
@@ -631,7 +680,7 @@ function deleteDish(){
 function exportRecipes(){
   const head = "/* Zdravé meníčko — Rezeptdaten\n   Export vom " +
     new Date().toLocaleString("de-DE") + "\n   Ersetzt die bisherige rezepte.js. */\n";
-  download("rezepte.js", head + "window.REZEPTE = " + JSON.stringify(RECIPES, null, 1) + ";\n",
+  download("rezepte.txt", head + "window.REZEPTE = " + JSON.stringify(RECIPES, null, 1) + ";\n",
     "application/javascript;charset=utf-8");
   toast("rezepte.js exportiert");
 }
@@ -676,9 +725,14 @@ function printEinkauf(){
       '<div class="pi"><span class="pbox"></span><span>' + esc(i.n) + '</span><b>' +
       posText(i, port) + '</b></div>').join("") + '</div>';
   }).join("");
+  const eigene = extras(w).length
+    ? '<div class="pgrp"><h4>Zusätzlich</h4>' + extras(w).map(x =>
+        '<div class="pi"><span class="pbox"></span><span>' + esc(x.text) + '</span></div>').join("") +
+      '</div>'
+    : "";
   const vorrat = items.filter(i => i.pantry).map(i => i.n).join(", ");
   return '<div class="psec">' + printHead("Einkaufsliste") +
-    '<div class="pcols">' + (groups || "<p>Noch keine Gerichte geplant.</p>") + '</div>' +
+    '<div class="pcols">' + ((groups + eigene) || "<p>Noch keine Gerichte geplant.</p>") + '</div>' +
     (vorrat ? '<div class="pnote">Aus dem Vorrat, nicht gekauft: ' + esc(vorrat) + '</div>' : '') +
     '</div>';
 }

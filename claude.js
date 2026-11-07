@@ -35,6 +35,7 @@ function openKI(ziel){
 
 const SCHEMA = `{
   "name": "Name des Gerichts, kurz und auf Deutsch",
+  "original": "Originaltitel, wenn die Quelle fremdsprachig ist, sonst leer",
   "sub": "ein Satz, der das Gericht oder seinen Kniff beschreibt",
   "cat": "fleisch | fisch | veg | suppe",
   "win": "alle | we",
@@ -46,6 +47,14 @@ const SCHEMA = `{
 }`;
 
 const REGELN = `So wird das Rezept aufgeschrieben:
+
+NAME
+- Der Name steht auf Deutsch. Ist die Quelle fremdsprachig, gib den Originaltitel
+  zusätzlich im Feld "original" zurück, in der Originalsprache und mit allen
+  Sonderzeichen: "Linecké s citronovým krémem". Ist die Quelle deutsch, bleibt
+  "original" leer.
+- Übersetze den Titel sinngemäß, nicht Wort für Wort: aus "Linecké s citronovým
+  krémem" wird "Linzer Plätzchen mit Zitronencreme".
 
 MENGEN
 - Immer für 4 Portionen umrechnen, auch wenn die Quelle andere Mengen nennt.
@@ -86,8 +95,9 @@ AUSGABE
 
 const SCHEMA_BACK = `{
   "name": "Name des Gebäcks, kurz und auf Deutsch",
+  "original": "Originaltitel, wenn die Quelle fremdsprachig ist, sonst leer",
   "sub": "ein Satz, der das Gebäck oder seinen Kniff beschreibt",
-  "cat": "plaetzchen | brot",
+  "cat": "plaetzchen | kuchen | brot",
   "time": Gesamtzeit in Minuten als Zahl, Ruhe- und Gehzeiten eingerechnet,
   "ergebnis": "die Ausbeute, etwa ca. 50 Stück oder 1 Laib oder 1 Blech",
   "zut": [["Zutat", Menge als Zahl, "Einheit", "Warengruppe"], ...],
@@ -96,6 +106,14 @@ const SCHEMA_BACK = `{
 }`;
 
 const REGELN_BACK = `So wird das Backrezept aufgeschrieben:
+
+NAME
+- Der Name steht auf Deutsch. Ist die Quelle fremdsprachig, gib den Originaltitel
+  zusätzlich im Feld "original" zurück, in der Originalsprache und mit allen
+  Sonderzeichen: "Linecké s citronovým krémem". Ist die Quelle deutsch, bleibt
+  "original" leer.
+- Übersetze den Titel sinngemäß, nicht Wort für Wort: aus "Linecké s citronovým
+  krémem" wird "Linzer Plätzchen mit Zitronencreme".
 
 MENGEN
 - Die Mengen gelten für eine Fuhre: ein Blech, einen Laib, eine Dose Plätzchen.
@@ -119,6 +137,7 @@ WARENGRUPPE
 
 EINORDNUNG
 - cat = "plaetzchen" für Kleingebäck, Kekse, Makronen, Lebkuchen, Konfekt.
+- cat = "kuchen" für Blechkuchen, Torten, Schnitten, Muffins und Süßes mit Guss oder Creme.
 - cat = "brot" für Brot, Brötchen, Hefeteig, Zopf, Focaccia und alles Herzhafte aus dem Ofen.
 
 SCHRITTE
@@ -137,7 +156,8 @@ AUSGABE
 const schema = () => KI_ZIEL === "backen" ? SCHEMA_BACK : SCHEMA;
 const regeln = () => KI_ZIEL === "backen" ? REGELN_BACK : REGELN;
 
-async function askClaude(content, maxTokens){
+let letzterStop = "";
+async function askClaude(content, maxTokens, schonGekuerzt){
   const key = apiKey();
   if (!key) throw new Error("Kein API-Schlüssel hinterlegt — weiter unten im Abschnitt Zugang eintragen.");
 
@@ -168,6 +188,12 @@ async function askClaude(content, maxTokens){
   letzteAntwort = "HTTP " + r.status + " " + r.statusText + "\n\n" + rohtext;
 
   if (!r.ok){
+    // Manche Modelle lassen weniger Antwortlänge zu als angefragt. Dann nennt
+    // die Fehlermeldung die erlaubte Obergrenze — damit fragen wir noch einmal.
+    if (!schonGekuerzt && /max_tokens/.test(rohtext)){
+      const m = rohtext.match(/maximum[^0-9]{0,30}?(\d{3,6})/) || rohtext.match(/>\s*(\d{3,6})/);
+      if (m) return askClaude(content, Number(m[1]), true);
+    }
     let typ = "", msg = "";
     try {
       const e = JSON.parse(rohtext);
@@ -187,8 +213,26 @@ async function askClaude(content, maxTokens){
     err.roh = letzteAntwort;
     throw err;
   }
+  letzterStop = d.stop_reason || "";
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
 }
+/* Fragt und wiederholt einmal mit mehr Luft, wenn die Antwort mittendrin endete.
+   Lange tschechische Rezepte brauchen deutlich mehr Platz als deutsche. */
+async function askLang(content, erst, mehr){
+  let txt = await askClaude(content, erst);
+  if (letzterStop === "max_tokens"){
+    txt = await askClaude(content, mehr);
+    if (letzterStop === "max_tokens"){
+      const err = new Error("Die Antwort des Modells war auch beim zweiten Versuch zu lang und " +
+        "brach mittendrin ab. Bei sehr langen Rezepten hilft es, nur die Seite mit Zutaten und " +
+        "Zubereitung zu fotografieren, oder ein Modell mit mehr Spielraum zu wählen.");
+      err.roh = letzteAntwort;
+      throw err;
+    }
+  }
+  return txt;
+}
+
 /* Holt das erste vollständige JSON-Objekt aus der Antwort. Modelle schreiben gern
    einen Satz davor, packen Codeblöcke drumherum oder hängen Erklärungen an. */
 function parseJson(text){
@@ -259,6 +303,16 @@ function schrittZeile(s){
   }
   return "";
 }
+/* Deutscher Name, dann Gedankenstrich, dann der Originaltitel. */
+function nameMitOriginal(name, original){
+  const n = String(name || "").trim();
+  const o = String(original || "").trim();
+  if (!o) return n;
+  if (!n) return o;
+  const norm = x => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (norm(n).indexOf(norm(o)) >= 0) return n;     // steht schon drin
+  return n + " – " + o;
+}
 /* Dasselbe für ein Backrezept: keine Portionen, keine Wochentage, dafür Ausbeute. */
 function toBake(j){
   const zutRoh = feld(j, ["zut","zutaten","ingredients","zutatenliste"]) || [];
@@ -266,9 +320,10 @@ function toBake(j){
   const cat = feld(j, ["cat","kategorie","category"]);
   const rez = {
     id: "",
-    name: String(feld(j, ["name","titel","title","gebaeck"]) || "").trim(),
+    name: nameMitOriginal(feld(j, ["name","titel","title","gebaeck"]),
+                          feld(j, ["original","originaltitel","original_name","originalname"])),
     sub: String(feld(j, ["sub","untertitel","beschreibung","subtitle"]) || "").trim(),
-    cat: (cat === "brot" || cat === "plaetzchen") ? cat : "plaetzchen",
+    cat: ["plaetzchen","kuchen","brot"].indexOf(cat) >= 0 ? cat : "plaetzchen",
     time: Number(feld(j, ["time","zeit","dauer","minuten"])) || 60,
     ergebnis: String(feld(j, ["ergebnis","ausbeute","yield","menge","stueck"]) || "").trim() || "1 Fuhre",
     zut: (Array.isArray(zutRoh) ? zutRoh : []).map(zutatZeile).filter(z => z[0]),
@@ -291,7 +346,8 @@ function toDish(j){
   const stepsRoh = feld(j, ["steps","schritte","zubereitung","anleitung","instructions"]) || [];
 
   const dish = {
-    id: "", name: String(name || "").trim(),
+    id: "",
+    name: nameMitOriginal(name, feld(j, ["original","originaltitel","original_name","originalname"])),
     sub: String(feld(j, ["sub","untertitel","beschreibung","subtitle"]) || "").trim(),
     cat: ["fleisch","fisch","veg","suppe"].indexOf(feld(j, ["cat","kategorie","category"])) >= 0
          ? feld(j, ["cat","kategorie","category"]) : "veg",
@@ -313,6 +369,40 @@ function toDish(j){
 }
 
 /* ---------- Rezept aus Foto ---------- */
+/* Fotos vom iPad sind 12 Megapixel groß und oft HEIC. Beides verträgt die
+   Schnittstelle schlecht: über 5 MB je Bild wird abgelehnt, HEIC gar nicht
+   angenommen, und ein riesiges Bild frisst Platz, der für die Antwort fehlt.
+   Deshalb wird jedes Bild vorher auf 1568 Pixel lange Kante gebracht und als
+   JPEG verschickt. Mehr Auflösung wertet die Bilderkennung ohnehin nicht aus. */
+const MAX_KANTE = 1568;
+function bildVerkleinern(file){
+  return new Promise(res => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const f = Math.min(1, MAX_KANTE / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * f));
+        c.height = Math.max(1, Math.round(img.height * f));
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL("image/jpeg", 0.82).split(",")[1]);
+      } catch(e){ res(null); }
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+    img.src = url;
+  });
+}
+async function bildTeil(f){
+  const klein = await bildVerkleinern(f);
+  if (klein) return {type:"image", source:{type:"base64", media_type:"image/jpeg", data: klein}};
+  return {type:"image",
+    source:{type:"base64", media_type: f.type || "image/jpeg", data: await fileToBase64(f)}};
+}
 function fileToBase64(file){
   return new Promise((res, rej) => {
     const r = new FileReader();
@@ -324,17 +414,18 @@ function fileToBase64(file){
 async function recipeFromPhotos(files){
   const parts = [];
   for (const f of files){
-    parts.push({
-      type: "image",
-      source: {type: "base64", media_type: f.type || "image/jpeg", data: await fileToBase64(f)}
-    });
+    parts.push(await bildTeil(f));
   }
   parts.push({type: "text", text:
     "Auf den Bildern steht ein Rezept, fotografiert aus einem Kochbuch, von einem Zettel oder " +
     "einem Bildschirm. Lies es vollständig, auch wenn es über mehrere Bilder läuft oder schräg " +
     "fotografiert ist, und übertrage es in dieses JSON:\n" + schema() + "\n\n" + regeln() +
-    "\n\nWenn auf den Bildern mehrere Rezepte stehen, nimm das, das den meisten Platz einnimmt."});
-  const txt = await askClaude(parts, 4000);
+    "\n\nSo liest du die Seite: Zutaten stehen in Zeitschriften oft in einem eigenen Kasten " +
+    "neben oder unter dem Bild, manchmal in Abschnitten wie „für den Teig“ und „für die Creme“. " +
+    "Nimm alle Abschnitte mit. Fließtext läuft in Spalten: erst die linke Spalte von oben nach " +
+    "unten, dann die nächste. Stehen mehrere Rezepte auf der Seite, nimm das, das den meisten " +
+    "Platz einnimmt, und lass die Randspalten der Nachbarrezepte weg."});
+  const txt = await askLang(parts, 8000, 16000);
   letzteRohantwort = txt;
   return toDish(parseJson(txt));
 }
@@ -352,13 +443,14 @@ async function recipeFromText(input){
       throw new Error("Die Seite ließ sich nicht laden. Bitte den Rezepttext hier einfügen.");
     }
   }
-  const txt = await askClaude([{type: "text", text:
+  const frage = [{type: "text", text:
     "Unten steht eine Rezeptquelle: entweder der Text einer Webseite samt Navigation, Werbung und " +
     "Kommentaren, oder ein eingefügter Rezepttext, oder nur der Wunsch nach einem Gericht. " +
     "Suche das eigentliche Rezept heraus und ignoriere alles Drumherum. Steht dort kein Rezept, " +
     "sondern nur ein Gerichtname, schreibe ein passendes Rezept für einen Familienhaushalt. " +
     "Gib das Ergebnis in diesem JSON zurück:\n" + schema() + "\n\n" + regeln() +
-    "\n\n--- QUELLE ---\n" + quelle}], 4000);
+    "\n\n--- QUELLE ---\n" + quelle}];
+  const txt = await askLang(frage, 8000, 16000);
   letzteRohantwort = txt;
   return toDish(parseJson(txt));
 }
@@ -367,8 +459,7 @@ async function recipeFromText(input){
 async function notizAusFotos(files){
   const parts = [];
   for (const f of files){
-    parts.push({type: "image",
-      source: {type: "base64", media_type: f.type || "image/jpeg", data: await fileToBase64(f)}});
+    parts.push(await bildTeil(f));
   }
   parts.push({type: "text", text:
     "Auf den Bildern steht eine Notiz: ein handgeschriebener Zettel, eine Einkaufsliste, eine " +
@@ -385,7 +476,7 @@ async function notizAusFotos(files){
     "- Erfinde nichts dazu, ordne nichts um und kommentiere nicht.\n" +
     "- Mehrere Bilder schreibst du nacheinander ab, getrennt durch eine Leerzeile.\n\n" +
     "Gib ausschließlich den abgeschriebenen Text aus, ohne Einleitung und ohne Codeblock."});
-  const txt = await askClaude(parts, 3000);
+  const txt = await askLang(parts, 8000, 16000);
   letzteRohantwort = txt;
   return String(txt || "").trim();
 }
@@ -395,8 +486,7 @@ async function suggestFromStock(stockText, photos){
   const namen = RECIPES.map(r => r.name + " (" + CATS[r.cat].n + ", " + r.time + " Min.)").join("; ");
   const parts = [];
   for (const f of (photos || [])){
-    parts.push({type: "image",
-      source: {type: "base64", media_type: f.type || "image/jpeg", data: await fileToBase64(f)}});
+    parts.push(await bildTeil(f));
   }
   const heute = new Date();
   const wochentag = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][heute.getDay()];

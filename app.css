@@ -599,3 +599,8 @@ body.hat-balken .site{padding-right:3.2rem}
 .umlaute button.satz{margin-left:auto;font-size:.82rem;letter-spacing:.04em;
   background:transparent;border-style:dashed}
 @media print{.umlaute{display:none}}
+
+/* Eigene Punkte unter der Einkaufsliste */
+.eigen{display:flex;gap:.5rem;margin-top:.9rem;padding-top:.8rem;border-top:1px dashed var(--line)}
+.eigen input{flex:1}
+.eigen .btn{flex:0 0 auto;min-width:3rem;font-size:1.1rem;line-height:1}

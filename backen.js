@@ -7,6 +7,7 @@
 
 const BCATS = {
   plaetzchen: {n:"Plätzchen",        c:"#8A3C2E"},
+  kuchen:     {n:"Kuchen",           c:"#8A5B2E"},
   brot:       {n:"Brot & Brötchen",  c:"#6B4A1F"}
 };
 
@@ -274,7 +275,64 @@ const BACKEN_BASE = [
         "Mit geölten Fingern auseinanderziehen und 45 Minuten gehen lassen.",
         "Mit den Fingerspitzen tiefe Dellen eindrücken, Öl, Rosmarin, grobes Salz und Tomaten darauf verteilen.",
         "Bei 230 Grad 20 bis 25 Minuten backen, bis die Oberfläche goldbraun ist."],
- tipp:"Nicht am Öl sparen. Es frittiert die Unterseite und macht die Kruste, die Focaccia ausmacht."}
+ tipp:"Nicht am Öl sparen. Es frittiert die Unterseite und macht die Kruste, die Focaccia ausmacht."},
+
+/* ---------- Aus der Sicherung vom 7. November 2026 übernommen ---------- */
+{id:"b-eno-nuno", name:"Eňo-ňuňo-Blechkuchen", cat:"kuchen", time:100, ergebnis:"1 Blech",
+ sub:"Lockerer Eier-Öl-Teig mit Kakao-Zickzack, Vanillepudding und saurer Sahne, obenauf Granko, Zimt und Schokolade.",
+ zut:[["Eier", 5, "", "m"],
+      ["Zucker, Puder", 250, "g", "v"],
+      ["Vanillezucker", 1, "Päckchen", "v"],
+      ["Öl, neutral", 100, "ml", "v"],
+      ["Wasser", 100, "ml", "v"],
+      ["Mehl, Typ 1050", 250, "g", "v"],
+      ["Backpulver", 1, "Päckchen", "v"],
+      ["Kakao", 1, "EL", "v"],
+      ["Milch", 1, "l", "m"],
+      ["Puddingpulver, Vanille", 2, "Päckchen", "v"],
+      ["Zucker", 6, "EL", "v"],
+      ["Sahne, saure", 600, "g", "m"],
+      ["Granko", 2, "EL", "v"],
+      ["Zimt", 1, "TL", "v"],
+      ["Schokolade", 50, "g", "v"]],
+ steps:["Backofen auf 180 °C Ober- und Unterhitze vorheizen und ein Blech fetten. Die Eier mit dem Puderzucker und dem Vanillezucker schaumig schlagen, dann Öl und Wasser unterrühren.",
+        "Mehl und Backpulver unterheben, bis ein glatter Teig entsteht. Etwa zwei Drittel des Teigs auf das Blech streichen.",
+        "Den restlichen Teig mit dem Kakao verrühren und in Zickzacklinien auf den hellen Teig gießen.",
+        "Die Milch mit dem Puddingpulver und 2 EL Zucker nach Packungsanleitung kochen, dann den Pudding esslöffelweise auf den rohen Teig geben.",
+        "Den Kuchen etwa 35 bis 40 Minuten backen, bis er auf der Oberfläche fest ist, und danach auf dem Blech abkühlen lassen.",
+        "Die saure Sahne mit 4 EL Zucker verrühren und auf dem noch warmen Kuchen verstreichen.",
+        "Mit Granko, Zimt und geraspelter Schokolade bestreuen und vollständig auskühlen lassen, damit sich die Schichten setzen, bevor der Kuchen geschnitten wird."],
+ tipp:"Den Pudding nur esslöffelweise und gleichmäßig auf den rohen Teig geben, damit die Kakaoschlieren darunter sichtbar bleiben, und den Kuchen vor dem Schneiden mindestens zwei Stunden kühlen."},
+
+{id:"b-pusinky", name:"Leichte Baiser-Küsschen – Lehké pusinky", cat:"plaetzchen", time:135, ergebnis:"ca. 20 Stück",
+ sub:"Luftige Baisertupfer werden auf kleine Johannisbeergelee-Stückchen gespritzt und lange im Ofen getrocknet.",
+ zut:[["Puderzucker", 120, "g", "v"],
+      ["Eiweiß", 3, "", "m"],
+      ["Johannisbeergelee, rot", 50, "g", "v"]],
+ steps:["Die Eiweiß im sauberen, fettfreien Rührbecken steif schlagen, dann nach und nach die Hälfte des Puderzuckers einrieseln lassen.",
+        "Sobald die Masse fest ist, den restlichen Puderzucker unterheben, sodass ein fester Schnee mit glänzender Oberfläche entsteht.",
+        "Ein Blech mit Backpapier belegen und kleine Stückchen Johannisbeergelee darauf verteilen.",
+        "Den Baiser mit einem Spritzbeutel mit Sterntülle auf die Gelee-Stückchen spritzen.",
+        "Die Küsschen bei etwa 90 °C Umluft oder 100 °C Ober- und Unterhitze rund 2 Stunden sehr langsam trocknen lassen.",
+        "Die Küsschen nach dem Backen im Ofen oder auf dem Gitter vollständig abkühlen lassen, bevor sie vom Papier gelöst werden."],
+ tipp:"Den Baiser niemals bei hoher Hitze backen, sonst bräunt er und bleibt innen klebrig; die Ofentür während der Trocknung möglichst geschlossen halten."},
+
+{id:"b-kyticky", name:"Knusprige Linzer Blümchen – Křehké linecké kytičky", cat:"plaetzchen", time:60, ergebnis:"ca. 100 Stück",
+ sub:"Mürbe Butterplätzchen aus einem Spritzteig, in der Mitte mit Himbeerkonfitüre gefüllt.",
+ zut:[["Mehl, hell (glatt)", 750, "g", "v"],
+      ["Butter", 550, "g", "m"],
+      ["Puderzucker", 150, "g", "v"],
+      ["Vanillezucker", 1, "Päckchen", "v"],
+      ["Eigelb", 1, "", "m"],
+      ["Himbeerkonfitüre", 250, "g", "v"]],
+ steps:["Die Butter leicht erwärmen, dann mit Puderzucker und Vanillezucker schaumig schlagen und das Eigelb unterrühren.",
+        "Das gesiebte Mehl zuletzt zart unterheben, bis ein geschmeidiger Teig entsteht.",
+        "Den Teig in einen Spritzbeutel mit Sterntülle füllen und kleine Kränzchen auf das Blech spritzen.",
+        "In die Mitte jedes Kränzchens mit dem Finger oder einem Löffelstiel eine Mulde drücken.",
+        "Die Mulden mit einem Teelöffel Himbeerkonfitüre füllen, ohne sie zu überfüllen.",
+        "Im vorgeheizten Ofen bei 170 °C Ober- und Unterhitze etwa 12 bis 15 Minuten backen, bis die Ränder hell goldrosa gefärbt sind.",
+        "Die Plätzchen auf dem Blech vollständig auskühlen lassen, bevor man sie vorsichtig vom Blech löst."],
+ tipp:"Ist der Teig bei warmer Küche zu weich, kurz kalt stellen, damit die Blümchen ihre Form behalten, und ist die Konfitüre sehr dünnflüssig, mit etwas Biskuitbröseln andicken, damit sie in der Mulde bleibt."}
 ];
 
 /* ---------- Rezeptbestand ----------
@@ -307,6 +365,7 @@ function backState(){
   if (!b.checked) b.checked = {};
   if (!b.buy) b.buy = {};
   if (!b.have) b.have = {};      // trotz Menge als vorrätig abgehakt
+  if (!Array.isArray(b.extra)) b.extra = [];
   return b;
 }
 const bakeById = id => BACKEN.find(r => r.id === id);
@@ -366,11 +425,14 @@ function renderBacken(){
   const sel = bakeSel();
   const fuhren = sel.reduce((s, r) => s + (b.sel[r.id] || 0), 0);
   const items = bakeList();
-  const offen = items.filter(i => !i.pantry && !b.checked[i.key]).length;
+  const offen = items.filter(i => !i.pantry && !b.checked[i.key]).length +
+                (b.extra || []).filter(x => !b.checked["x:" + x.id]).length;
+  const zus = (b.extra || []).length;
   $("#bakeStats").textContent = sel.length
     ? sel.length + (sel.length === 1 ? " Rezept" : " Rezepte") + " · " + fuhren +
       (fuhren === 1 ? " Fuhre" : " Fuhren") + " · " + offen + " offen"
-    : "Noch nichts gewählt";
+    : (zus ? zus + (zus === 1 ? " eigener Punkt" : " eigene Punkte") + " · " + offen + " offen"
+           : "Noch nichts gewählt");
   renderBakeShop();
 }
 
@@ -391,15 +453,14 @@ function bakeList(){
 function renderBakeShop(){
   const b = backState(), items = bakeList(), body = $("#bakeShop");
   if (!body) return;
-  if (!items.length){
-    body.innerHTML = '<p class="hint">Links Rezepte antippen. Die Zutaten aller gewählten Rezepte ' +
-      'landen hier zusammengezählt auf einem eigenen Zettel, unabhängig von der Woche.</p>';
-    return;
-  }
   const kauf = items.filter(i => !i.pantry);
   const vorrat = items.filter(i => i.pantry);
 
-  let html = Object.keys(GRP).map(g => {
+  let html = (!items.length && !b.extra.length)
+    ? '<p class="hint">Links Rezepte antippen. Die Zutaten aller gewählten Rezepte ' +
+      'landen hier zusammengezählt auf einem eigenen Zettel, unabhängig von der Woche. ' +
+      'Eigene Punkte lassen sich unten eintragen.</p>'
+    : Object.keys(GRP).map(g => {
     const it = kauf.filter(i => i.g === g);
     if (!it.length) return "";
     return '<div class="grp"><h4 class="lbl">' + GRP[g] + '</h4>' + it.map((i, n) => {
@@ -419,9 +480,30 @@ function renderBakeShop(){
         '<button class="mini" data-bbuy="' + esc(i.key) + '">kaufen</button></div>').join("") +
       '</details>';
   }
+  html += extraHtml(b, b.extra, b.checked);
+  html += '<div class="eigen"><input id="bakeExtraFeld" placeholder="Eigener Punkt, etwa Backpapier">' +
+          '<button class="btn ghost" id="bakeExtraAdd">+</button></div>';
   body.innerHTML = html;
 
-  $$("#bakeShop input").forEach(cb => cb.onchange = () => {
+  const feld = $("#bakeExtraFeld");
+  const dazu = () => {
+    const s2 = backState();
+    const n = extraAdd({extra: s2.extra}, feld.value);
+    if (!n){ feld.focus(); return; }
+    feld.value = "";
+    save(); renderBacken();
+    const neu = $("#bakeExtraFeld"); if (neu) neu.focus();
+  };
+  $("#bakeExtraAdd").onclick = dazu;
+  feld.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); dazu(); } };
+  $$("#bakeShop [data-xdel]").forEach(el => el.onclick = () => {
+    const s2 = backState();
+    s2.extra = s2.extra.filter(x => x.id !== el.dataset.xdel);
+    delete s2.checked["x:" + el.dataset.xdel];
+    save(); renderBacken();
+  });
+
+  $$("#bakeShop input[type=checkbox]").forEach(cb => cb.onchange = () => {
     const s = backState();
     if (cb.checked) s.checked[cb.dataset.k] = 1; else delete s.checked[cb.dataset.k];
     save(); renderBacken();
@@ -443,14 +525,16 @@ function renderBakeShop(){
 }
 function bakeText(){
   const b = backState(), sel = bakeSel();
-  if (!sel.length) return null;
+  if (!sel.length && !(b.extra || []).length) return null;
   const items = bakeList().filter(i => !i.pantry && !b.checked[i.key]);
+  const eigene = (b.extra || []).filter(x => !b.checked["x:" + x.id]);
   let t = "Backen\n";
   Object.keys(GRP).forEach(g => {
     const it = items.filter(i => i.g === g);
     if (!it.length) return;
     t += "\n*" + GRP[g] + "*\n" + it.map(i => "• " + i.n + " — " + posText(i, 4)).join("\n") + "\n";
   });
+  if (eigene.length) t += "\n*Zusätzlich*\n" + eigene.map(x => "• " + x.text).join("\n") + "\n";
   t += "\n*Rezepte*\n" + sel.map(r => "• " + r.name +
     ((b.sel[r.id] || 1) > 1 ? " (" + b.sel[r.id] + "×)" : "") + " — " + r.ergebnis).join("\n");
   return t;
@@ -573,14 +657,14 @@ function deleteBake(){
 function exportBacken(){
   const head = "/* Týden — Backrezepte\n   Export vom " + new Date().toLocaleString("de-DE") +
     "\n   Ersetzt den Datenblock in backen.js. */\n";
-  download("backrezepte.js", head + "const BACKEN_BASE = " + JSON.stringify(BACKEN, null, 1) + ";\n",
-           "text/javascript");
+  download("backrezepte.txt", head + "const BACKEN_BASE = " + JSON.stringify(BACKEN, null, 1) + ";\n",
+           "text/plain;charset=utf-8");
 }
 
 /* ---------- Drucken ---------- */
 function printBacken(){
   const b = backState(), sel = bakeSel();
-  if (!sel.length) return "";
+  if (!sel.length && !(b.extra || []).length) return "";
   const items = bakeList();
   const kauf = items.filter(i => !i.pantry);
   const groups = Object.keys(GRP).map(g => {
@@ -590,13 +674,19 @@ function printBacken(){
       '<div class="pi"><span class="pbox"></span><span>' + esc(i.n) + '</span><b>' +
       posText(i, 4) + '</b></div>').join("") + '</div>';
   }).join("");
+  const eigene = (b.extra || []).length
+    ? '<div class="pgrp"><h4>Zusätzlich</h4>' + b.extra.map(x =>
+        '<div class="pi"><span class="pbox"></span><span>' + esc(x.text) + '</span></div>').join("") +
+      '</div>'
+    : "";
   const plan = sel.map(r => '<div class="pi"><span>' + esc(r.name) +
     ((b.sel[r.id] || 1) > 1 ? " · " + b.sel[r.id] + "×" : "") + '</span><b>' +
     esc(r.ergebnis) + '</b></div>').join("");
   const vorrat = items.filter(i => i.pantry).map(i => i.n).join(", ");
   return '<div class="psec"><div class="phead"><h1>Backen</h1><span>' + sel.length +
     (sel.length === 1 ? " Rezept" : " Rezepte") + '</span></div>' +
-    '<div class="pcols">' + groups + '<div class="pgrp"><h4>Gebacken wird</h4>' + plan + '</div></div>' +
+    '<div class="pcols">' + groups + eigene +
+      '<div class="pgrp"><h4>Gebacken wird</h4>' + plan + '</div></div>' +
     (vorrat ? '<div class="pnote">Aus dem Vorrat, nicht gekauft: ' + esc(vorrat) + '</div>' : '') +
     '</div>';
 }
@@ -637,7 +727,7 @@ function initBacken(){
   const leer = $("#bakeClear");
   if (leer) leer.onclick = () => {
     const b = backState();
-    b.sel = {}; b.checked = {}; b.buy = {}; b.have = {};
+    b.sel = {}; b.checked = {}; b.buy = {}; b.have = {}; b.extra = [];
     save(); renderBacken();
     toast("Backliste geleert");
   };

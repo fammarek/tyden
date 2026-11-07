@@ -9,6 +9,63 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.6.3 — 7. November 2026
+
+**Neu**
+- Die Rezepte aus deiner Sicherung sind in die Dateien übernommen. In der Kartei stehen
+  jetzt 66 Gerichte, dazu kamen Hackfleisch-Wraps aus der Pfanne, Linsen mit Spätzle und
+  Würstchen, Miso-Ramen-Suppe und Pho Bo. Ofenpfannkuchen darf jetzt auch unter der Woche.
+- Bei den Backrezepten sind es 23: dazu kamen Eňo-ňuňo-Blechkuchen, Lehké pusinky und
+  Křehké linecké kytičky.
+- Dritte Kategorie beim Backen: Kuchen, zwischen Plätzchen und Brot. Der Blechkuchen stand
+  sonst unter Plätzchen. Claude kennt die Kategorie beim Anlegen neuer Rezepte mit.
+
+**Geändert**
+- Rezepte und Backrezepte werden als `.txt` statt als `.js` exportiert. Gmail und die meisten
+  anderen Programme lassen `.js` im Anhang nicht durch. Der Inhalt bleibt gleich, die Datei
+  lässt sich weiterhin direkt in `rezepte.js` beziehungsweise in den Datenblock von
+  `backen.js` übernehmen.
+- Kennungen vertragen jetzt tschechische Buchstaben. Aus „Eňo-ňuňo-Blechkuchen" wurde vorher
+  die Kennung „e-o-u-o-blechkuchen", jetzt „eno-nuno-blechkuchen".
+
+**Behoben**
+- In den Baiser-Küsschen stand noch ein tschechisches Wort aus der Übersetzung
+  („tuhy Schnee"), jetzt „fester Schnee". Die beiden tschechischen Titel haben ihre
+  Hatschek und Längezeichen zurück.
+
+---
+
+## v0.6.2 — 7. November 2026
+
+**Behoben**
+- Fotos gingen in voller Größe an Claude, also mit zwölf Megapixeln und bei iPhone-Bildern
+  im Format HEIC. Beides verträgt die Schnittstelle schlecht: über fünf Megabyte je Bild
+  wird abgelehnt, HEIC gar nicht angenommen, und ein riesiges Bild frisst den Platz, der
+  für die Antwort gebraucht wird. Jedes Bild wird jetzt vorher auf 1568 Pixel lange Kante
+  gebracht und als JPEG verschickt. Mehr Auflösung wertet die Bilderkennung ohnehin nicht aus.
+- Lange Rezepte brachen mittendrin ab, besonders tschechische: Tschechisch braucht deutlich
+  mehr Platz als Deutsch, und die Obergrenze für die Antwort war zu knapp gesetzt. Sie ist
+  jetzt viermal so hoch. Reicht sie trotzdem nicht, fragt die App automatisch ein zweites Mal
+  mit doppeltem Spielraum nach und sagt erst dann Bescheid, statt eine halbe Karte zu bauen.
+- Lässt das gewählte Modell weniger Antwortlänge zu, übernimmt die App die erlaubte
+  Obergrenze aus der Fehlermeldung und fragt damit noch einmal, statt abzubrechen.
+
+**Neu**
+- Eigene Punkte auf dem Einkaufszettel. Unter der Liste steht ein Feld: eintippen, Eingabe
+  oder Plus, fertig. Mit Kästchen zum Abhaken und "weg" zum Entfernen, in der Gruppe
+  "Zusätzlich". Sie hängen an der Woche, überleben also das Würfeln, und gehen mit an
+  WhatsApp und auf den Ausdruck. Dasselbe gibt es auf der Backliste.
+- Fremdsprachige Rezepte behalten ihren Originaltitel: erst die deutsche Übersetzung,
+  dann ein Gedankenstrich, dann das Original — "Linzer Plätzchen mit Zitronencreme –
+  Linecké s citronovým krémem".
+
+**Geändert**
+- Beim Abfotografieren von Rezepten weiß Claude jetzt, wie Zeitschriftenseiten aufgebaut
+  sind: Zutaten im Kasten neben dem Bild, Abschnitte wie "für den Teig" und "für die Creme",
+  Fließtext in Spalten, Nachbarrezepte am Rand gehören nicht dazu.
+
+---
+
 ## v0.6.1 — 6. November 2026
 
 **Behoben**

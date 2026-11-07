@@ -1475,7 +1475,7 @@ window.REZEPTE = [
   tipp: ""
 },
 {
-  id: "ofenpfannkuchen", name: "Ofenpfannkuchen", cat: "veg", win: "we",
+  id: "ofenpfannkuchen", name: "Ofenpfannkuchen", cat: "veg", win: "alle",
   time: 35, kh: 42, ok: false,
   sub: "Geht im Ofen hoch wie ein Soufflé.",
   zut: [
@@ -1554,5 +1554,131 @@ window.REZEPTE = [
     "Fleisch von den Knochen lösen, zurück in die Suppe geben, abschmecken und mit Petersilie bestreuen."
   ],
   tipp: "Das Rösten am Anfang ist der ganze Geschmack. Wer das Huhn nur kocht, bekommt blasse Brühe."
+},
+
+/* ---------- Aus der Sicherung vom 7. November 2026 ---------- */
+{
+  id: "hackfleisch-wraps-aus-der-pfanne", name: "Hackfleisch-Wraps aus der Pfanne", cat: "fleisch", win: "we",
+  time: 20, kh: 35, ok: false,
+  sub: "Würziges BBQ-Hackfleisch wird heiß und krümelig gebraten und mit Käse und Salat im Wrap eingerollt.",
+  zut: [
+    ["Wrap, Tortilla", 4, "", "m"],
+    ["Hackfleisch, gemischt", 500, "g", "f"],
+    ["Paprikapulver, edelsüß", 4, "TL", "v"],
+    ["BBQ-Gewürzmischung", 4, "TL", "v"],
+    ["Salz", 2, "TL", "v"],
+    ["Käse, Scheibletten", 8, "", "m"],
+    ["Salat, Eisberg", 1, "Kopf", "g"],
+    ["Sauce, Hamburger", 4, "EL", "m"]
+  ],
+  steps: [
+    "Das Hackfleisch in eine Schüssel geben und mit Paprikapulver, BBQ-Gewürzmischung und Salz gründlich vermengen.",
+    "Eine beschichtete Pfanne ohne Fett auf mittlerer bis hoher Hitze gut vorheizen, bis sie spürbar heiß ist.",
+    "Das Hackfleisch in die Pfanne geben und unter ständigem Rühren krümelig braten, bis es vollständig durchgegart und leicht gebräunt ist, etwa 6 bis 8 Minuten.",
+    "Den Salat waschen, trocken schleudern und in grobe Streifen schneiden, damit er beim Einrollen nicht durchweicht.",
+    "Die Wraps kurz in einer trockenen Pfanne oder in der Mikrowelle erwärmen, bis sie biegsam sind.",
+    "Auf jeden Wrap zuerst etwas Hackfleisch, dann Käse, Salat und einen Esslöffel Sauce geben, dabei die Mitte frei lassen.",
+    "Die Seiten einklappen und den Wrap fest von unten aufrollen, damit die Füllung beim Essen nicht herausfällt."
+  ],
+  tipp: "Wer Kohlenhydrate sparen möchte, ersetzt den Wrap durch große Eisbergsalatblätter, die das Hackfleisch genauso gut umhüllen."
+},
+
+{
+  id: "linsen-spaetzle-und-wuerstchen", name: "Linsen, Spätzle und Würstchen", cat: "fleisch", win: "we",
+  time: 35, kh: 24, ok: false,
+  sub: "Ein Eintopf aus Tellerlinsen und Röstgemüse, im Varoma gleichzeitig mit Spätzle und Würstchen gegart.",
+  zut: [
+    ["Zwiebel", 1, "", "g"],
+    ["Porree", 67, "g", "g"],
+    ["Möhre", 67, "g", "g"],
+    ["Knollensellerie", 53, "g", "g"],
+    ["Öl", 20, "g", "v"],
+    ["Speck, geräuchert", 80, "g", "f"],
+    ["Wasser", 600, "ml", "v"],
+    ["Linsen, Tellerlinsen", 167, "g", "v"],
+    ["Gemüsebrühe, Gewürzpaste selbst gemacht", 1, "TL", "v"],
+    ["Essig", 20, "ml", "v"],
+    ["Tomatenmark", 13, "g", "v"],
+    ["Salz", 0.3, "TL", "v"],
+    ["Zucker", 0.7, "TL", "v"],
+    ["Spätzle", 267, "g", "m"],
+    ["Würstchen", 4, "", "f"]
+  ],
+  steps: [
+    "Zwiebel, Porree, Möhren, Sellerie und 20 g Öl im Mixtopf 4 Sekunden auf Stufe 5 zerkleinern.",
+    "Speckwürfel mit 10 g Öl zugeben und 3 Minuten bei 120 °C auf Stufe 1 dünsten, bis der Speck Farbe annimmt.",
+    "Wasser, Linsen, Gewürzpaste, Essig, Tomatenmark, Salz und Zucker zugeben. Den Varoma aufsetzen, die Spätzle darin verteilen und darauf achten, dass einige Dampfschlitze frei bleiben. Den Varoma verschließen und 20 Minuten auf Stufe 1 garen.",
+    "Den Varoma-Deckel vorsichtig öffnen, die Würstchen auf die Spätzle legen, wieder verschließen und weitere 5 Minuten garen.",
+    "Den Varoma absetzen, die Linsen abschmecken und mit Spätzle und Würstchen servieren."
+  ],
+  tipp: "Wird der Linseneintopf am Ende zu dick, mit etwas heißem Wasser verdünnen, da Linsen beim Stehen stark nachquellen."
+},
+
+{
+  id: "miso-ramen-suppe", name: "Miso-Ramen-Suppe", cat: "suppe", win: "we",
+  time: 15, kh: 75, ok: false,
+  sub: "Knoblauch, Ingwer und Sesamöl werden zuerst angebraten, dann mit Brühe abgelöscht, und die Miso-Paste kommt erst zum Schluss hinein, damit sie aromatisch bleibt.",
+  zut: [
+    ["Knoblauch", 4, "", "g"],
+    ["Ingwer", 40, "g", "g"],
+    ["Shiitake, getrocknet", 20, "g", "g"],
+    ["Pak Choi", 4, "", "g"],
+    ["Sesamöl", 4, "EL", "v"],
+    ["Tofu, geräuchert", 200, "g", "m"],
+    ["Gemüsebrühe", 1600, "ml", "v"],
+    ["Miso, hell", 2, "EL", "v"],
+    ["Gochujang, Chilipaste", 2, "TL", "v"],
+    ["Ramen-Nudeln", 500, "g", "v"],
+    ["Eier", 4, "", "m"],
+    ["Frühlingszwiebeln", 4, "", "g"],
+    ["Sesam, geröstet", 4, "EL", "v"]
+  ],
+  steps: [
+    "Knoblauch pressen, Ingwer fein hacken, Shiitake nach Packungsangabe in Wasser einweichen, Pak Choi längs halbieren und Tofu würfeln.",
+    "Sesamöl im großen Topf bei mittlerer bis starker Hitze erhitzen und den Tofu darin goldbraun anbraten, danach Knoblauch und Ingwer kurz mitbraten, bis es duftet.",
+    "Mit der Gemüsebrühe ablöschen, Gochujang einrühren und die Brühe zum Kochen bringen.",
+    "Eingeweichte Shiitake ausdrücken und in Scheiben schneiden, Frühlingszwiebeln in feine Ringe (weißer Teil) und ca. 1 cm lange Stücke (grüner Teil) schneiden.",
+    "Die Hitze deutlich reduzieren, Miso in einer Kelle Brühe glatt rühren und in den Topf geben, ohne die Suppe danach noch aufzukochen. Pak Choi, Shiitake und Ramen-Nudeln dazugeben und 3 bis 5 Minuten ziehen lassen, bis die Nudeln gar sind; dabei gelegentlich lockern, damit sie nicht verkleben.",
+    "Eier 6 Minuten wachsweich kochen, abschrecken, schälen und halbieren.",
+    "Die Suppe auf vier Schüsseln verteilen und mit Ei, Frühlingszwiebeln und geröstetem Sesam garnieren."
+  ],
+  tipp: "Die Nudeln klumpen oft zusammen, deshalb in einer Portion Brühe zügig lockern; als Low-Carb-Alternative eignen sich Shirataki-Nudeln, die nur 2 bis 3 Minuten erwärmt werden müssen."
+},
+
+{
+  id: "pho-bo", name: "Pho Bo", cat: "suppe", win: "we",
+  time: 40, kh: 78, ok: false,
+  sub: "Klare vietnamesische Rinderbrühe mit Zimt, Sternanis und Kardamom, deren Tiefe aus den karamellisierten Zwiebeln kommt.",
+  zut: [
+    ["Zwiebel", 2, "", "g"],
+    ["Knoblauchzehe", 2, "", "g"],
+    ["Ingwer", 1, "", "g"],
+    ["Kardamomkapsel", 3, "", "v"],
+    ["Sesamöl", 1, "EL", "v"],
+    ["Zimtstange", 1, "Stange", "v"],
+    ["Sternanis", 2, "", "v"],
+    ["Zucker", 1, "TL", "v"],
+    ["Rinderbrühe", 1.5, "l", "v"],
+    ["Sojasauce", 1, "EL", "v"],
+    ["Fischsauce", 1, "EL", "v"],
+    ["Mungbohnensprossen", 300, "g", "g"],
+    ["Lauchzwiebel", 2, "Bund", "g"],
+    ["Minze", 5, "Zweige", "g"],
+    ["Koriander", 1, "Bund", "g"],
+    ["Limette", 2, "", "g"],
+    ["Chilischote, rot", 1, "", "g"],
+    ["Reisbandnudeln", 300, "g", "v"],
+    ["Rinderfilet, mager", 200, "g", "f"]
+  ],
+  steps: [
+    "Zwiebeln halbieren und in feine Streifen schneiden, Knoblauch und ungeschälten Ingwer in dünne Scheiben schneiden und die Kardamomkapseln mit dem Messer andrücken, bis sie aufplatzen.",
+    "Sesamöl in einem großen Topf erhitzen und Zwiebeln, Knoblauch, Ingwer, Zimt, Sternanis und Kardamom 3 Minuten anbraten, dann den Zucker unter Rühren karamellisieren lassen, bis er goldbraun ist.",
+    "Mit der Rinderbrühe ablöschen und 15 Minuten köcheln lassen, damit sich die Aromen entfalten.",
+    "Mungbohnensprossen abbrausen und abtropfen lassen, Lauchzwiebeln in weiße und grüne Ringe schneiden, Minze und Koriander waschen, trocken schütteln und die Blätter grob hacken.",
+    "Limetten heiß abwaschen, eine Limette auspressen, die andere in Spalten schneiden und die Chili in feine Ringe schneiden, die Reisbandnudeln nach Packungsangabe in kochendem Wasser garen.",
+    "Rinderfilet mit einem scharfen Messer in sehr feine Streifen schneiden, Zimt, Sternanis und Kardamom aus der Brühe fischen und die Brühe mit Soja-, Fischsauce und Limettensaft abschmecken.",
+    "Nudeln auf vier Schalen verteilen, die rohen Rindfleischstreifen darauflegen, mit der kochend heißen Brühe übergießen und sofort mit Sprossen, Lauchzwiebeln, Kräutern, Chili und Limette servieren."
+  ],
+  tipp: "Das Rinderfilet lässt sich besser in dünne Scheiben schneiden, wenn es 30 Minuten im Gefrierfach angezogen ist, und als Low-Carb-Alternative zu den Reisbandnudeln passen Zucchininudeln oder Shirataki-Nudeln."
 }
 ];
