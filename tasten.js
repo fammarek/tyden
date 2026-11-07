@@ -69,7 +69,19 @@ function initTasten(){
   if (!box) return;
   tastenZeichnen();
 
+  const an = $("#setZeichen");
+  if (an){
+    an.checked = !!DB.settings.zeichenleiste;
+    an.onchange = () => {
+      DB.settings.zeichenleiste = an.checked;
+      save();
+      if (!an.checked){ box.hidden = true; tastenFeld = null; }
+      toast(an.checked ? "Leiste wird angezeigt" : "Leiste ausgeblendet");
+    };
+  }
+
   document.addEventListener("focusin", e => {
+    if (!DB.settings.zeichenleiste) return;      // standardmäßig aus
     if (!tastenTaugt(e.target)) return;
     tastenFeld = e.target;
     // Ein offener Dialog legt alles andere still. Die Leiste muss dann

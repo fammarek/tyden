@@ -9,6 +9,21 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.6.4 — 7. November 2026
+
+**Geändert**
+- Die Leiste mit Sonderzeichen ist standardmäßig aus. Unter Zahnrad → Tastatur lässt sie
+  sich einschalten, falls sie doch einmal gebraucht wird.
+
+**Hinweis**
+- In den Textfeldern der App steckt die ganz normale iOS-Tastatur; eine Web-Seite kann
+  daran nichts einschränken und auch nichts freischalten. Der Globus zum Umschalten der
+  Sprache erscheint erst, wenn mindestens zwei Tastaturen eingerichtet sind:
+  Einstellungen → Allgemein → Tastatur → Tastaturen → Tastatur hinzufügen. Bei einer
+  angesteckten Tastatur wechselt Strg + Leertaste.
+
+---
+
 ## v0.6.3 — 7. November 2026
 
 **Neu**

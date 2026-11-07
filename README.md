@@ -1,4 +1,4 @@
-# Týden · Wochenplan — v0.6.3
+# Týden · Wochenplan — v0.6.4
 
 Ein Wochenplaner fürs iPad: Kalender, Essensplan, Einkaufsliste und ein Notizblock
 für den Apple Pencil. Alles liegt in einer statischen Webseite, die Daten bleiben
