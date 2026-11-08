@@ -9,6 +9,39 @@ unter Zahnrad → Daten.
 
 ---
 
+## v0.7.1 — 8. November 2026
+
+**Behoben**
+- Abgehakte Zutaten standen weiter auf dem Ausdruck. Jetzt kommt nur noch auf den
+  Zettel, was wirklich fehlt — bei der Wochenliste wie bei der Backliste, die
+  eigenen Punkte eingeschlossen.
+- Dieselbe Zutat stand mehrfach untereinander: "Zwiebel", "Zwiebeln" und
+  "rote Zwiebel", oder "Knoblauch", "Knoblauchzehe" und "Knoblauchzehen". Die Liste
+  erkennt jetzt Einzahl und Mehrzahl, dreht vorangestellte Eigenschaften um
+  ("rote Zwiebel" ist "Zwiebel, rot", "gemahlene Mandeln" sind "Mandeln, gemahlen")
+  und zieht das Maßwort aus dem Namen heraus: aus drei Knoblauchzehen wird
+  "Knoblauch — 3 Zehen". Dasselbe gilt für Lorbeerblatt, Zimtstange und ähnliche.
+  Verschiedene Namen für dasselbe werden zusammengeführt: Möhre und Karotte,
+  Porree und Lauch, Lauchzwiebel und Frühlingszwiebel.
+- Unterschieden bleibt, was sich unterscheidet: "Zwiebel" und "Zwiebel, rot",
+  "Pfeffer" und "weißer Pfeffer", "Salz" und "grobes Salz", "ganze" und "gehackte
+  Haselnüsse" stehen weiter getrennt.
+- In den Rezeptdateien sind die Namen vereinheitlicht, damit auch die Rezeptkarten
+  und der Export gleich schreiben.
+
+**Neu**
+- Anbindung an **Microsoft To Do**. Der Knopf "An To Do" schickt alles Offene als
+  einzelne Aufgaben in eine Liste deiner Wahl, Menge hinter dem Namen. Was dort schon
+  steht, wird nicht doppelt angelegt. Die Anmeldung läuft über OAuth mit PKCE, also
+  ohne Geheimschlüssel; der Zugang liegt nur in diesem Browser. Einrichtung in
+  README.md. Microsoft gibt Web-Apps einen Zugang nur für 24 Stunden, danach fragt
+  die App beim Senden wieder nach der Anmeldung.
+- Knopf "Teilen" bei beiden Einkaufslisten. Er öffnet das Teilen-Blatt des iPads;
+  damit geht die Liste an Erinnerungen, Notizen, Mail, Microsoft To Do und alles
+  andere, was Text annimmt.
+
+---
+
 ## v0.6.4 — 7. November 2026
 
 **Geändert**

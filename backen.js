@@ -666,7 +666,7 @@ function printBacken(){
   const b = backState(), sel = bakeSel();
   if (!sel.length && !(b.extra || []).length) return "";
   const items = bakeList();
-  const kauf = items.filter(i => !i.pantry);
+  const kauf = items.filter(i => !i.pantry && !b.checked[i.key]);
   const groups = Object.keys(GRP).map(g => {
     const it = kauf.filter(i => i.g === g);
     if (!it.length) return "";
@@ -674,8 +674,9 @@ function printBacken(){
       '<div class="pi"><span class="pbox"></span><span>' + esc(i.n) + '</span><b>' +
       posText(i, 4) + '</b></div>').join("") + '</div>';
   }).join("");
-  const eigene = (b.extra || []).length
-    ? '<div class="pgrp"><h4>Zusätzlich</h4>' + b.extra.map(x =>
+  const offeneExtras = (b.extra || []).filter(x => !b.checked["x:" + x.id]);
+  const eigene = offeneExtras.length
+    ? '<div class="pgrp"><h4>Zusätzlich</h4>' + offeneExtras.map(x =>
         '<div class="pi"><span class="pbox"></span><span>' + esc(x.text) + '</span></div>').join("") +
       '</div>'
     : "";
@@ -739,6 +740,8 @@ function initBacken(){
     if (!t){ toast("Noch kein Rezept gewählt"); return; }
     window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank");
   };
+  const tl = $("#bakeTeilen");
+  if (tl) tl.onclick = () => teileListe("Backen", bakeText());
   const kop = $("#bakeCopy");
   if (kop) kop.onclick = () => {
     const t = bakeText();

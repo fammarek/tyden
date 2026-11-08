@@ -89,22 +89,125 @@ function unitInfo(u){
   return UNIT_BASE[k] || {b:k, f:1};
 }
 const ZWECK = /\s*,?\s*\b(für|fürs|zum|zur|nach)\b\s+.*$/i;
-function canonName(name){
+
+/* Maßwörter, die im Namen stecken. "Knoblauchzehen" ist Knoblauch, gemessen
+   in Zehen — und gehört damit in dieselbe Zeile wie "Knoblauch". */
+const MASS_IM_NAMEN = [
+  ["zehen","Zehen"], ["zehe","Zehen"], ["stangen","Stange"], ["stange","Stange"],
+  ["knollen","Knolle"], ["knolle","Knolle"], ["scheiben","Scheibe"], ["scheibe","Scheibe"],
+  ["blätter","Blatt"], ["blatt","Blatt"], ["zweige","Zweige"], ["zweig","Zweige"],
+  ["köpfe","Kopf"], ["kopf","Kopf"]
+];
+/* Eigenschaften, die vorn oder hinten stehen dürfen: "rote Zwiebel" ist
+   dasselbe wie "Zwiebel, rot", "gemahlene Mandeln" wie "Mandeln, gemahlen". */
+const EIGENSCHAFTEN = ["rot","gelb","grün","weiß","schwarz","braun","klein","groß","ganz",
+  "gemahlen","gehackt","gerieben","getrocknet","geräuchert","frisch","sauer","grob","fein",
+  "mager","hell","dunkel","mild","scharf","süß","gesalzen","gekocht","passiert","stückig",
+  "gewürfelt","geschält","tiefgekühlt","gemischt","edelsüß","glatt"];
+/* Verschiedene Namen für dasselbe. Nur das Grundwort, schon entpluralt. */
+const SYNONYME = {"mohr":"karott", "mohre":"karott", "mohren":"karott",
+                  "porree":"lauch", "lauchzwiebel":"fruhlingszwiebel",
+                  "lauchzwiebeln":"fruhlingszwiebel"};
+
+function ohneAkzent(w){
+  return w.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ß/g,"ss");
+}
+/* Mehrzahl auf Einzahl bringen, vorsichtig: nur wenn genug Wort übrig bleibt. */
+function entplural(w){
+  if (w.length <= 4 || /(chen|lein)$/.test(w)) return w;
+  for (const e of ["en", "n", "e"]){
+    if (w.endsWith(e) && w.length - e.length >= 4) return w.slice(0, w.length - e.length);
+  }
+  return w;
+}
+/* Beugung abwerfen: "rote" wird "rot", "gemahlene" wird "gemahlen". */
+function grundform(w){
+  for (const e of ["em","es","er","en","e"]){
+    if (w.length - e.length >= 3 && w.endsWith(e)) return w.slice(0, w.length - e.length);
+  }
+  return w;
+}
+function istEigenschaft(w){
+  const roh = grundform(w.toLowerCase());
+  const k = ohneAkzent(roh);
+  return EIGENSCHAFTEN.some(x => ohneAkzent(x) === k) ? {k: k, zeig: roh} : null;
+}
+/* Zerlegt einen Zutatennamen in Grundwort, Eigenschaften und ein Maßwort,
+   das im Namen steckte. Daraus entsteht der Schlüssel zum Zusammenzählen. */
+function zerlege(name){
   let s = String(name == null ? "" : name).normalize("NFC").replace(/\s+/g, " ").trim();
   s = s.replace(/\s*\([^)]*\)\s*$/, "").trim();
   const ohne = s.replace(ZWECK, "").trim();
   if (ohne.length >= 3) s = ohne;
-  return s;
+
+  const teile = s.split(",").map(t => t.trim()).filter(Boolean);
+  let kopf = teile.shift() || "";
+  const eig = [], zeig = [];
+  teile.forEach(t => {
+    const e = istEigenschaft(t);
+    eig.push(e ? e.k : ohneAkzent(t.toLowerCase()));
+    zeig.push(t);
+  });
+
+  // vorangestellte Eigenschaft: "rote Zwiebel" ist "Zwiebel, rot"
+  const woerter = kopf.split(" ");
+  while (woerter.length > 1){
+    const e = istEigenschaft(woerter[0]);
+    if (!e) break;
+    eig.push(e.k);
+    zeig.push(e.zeig);
+    woerter.shift();
+  }
+  kopf = woerter.join(" ");
+
+  // Maßwort am Ende des Grundworts abtrennen
+  let mass = "";
+  const klein = ohneAkzent(kopf.toLowerCase());
+  for (const [endung, einheit] of MASS_IM_NAMEN){
+    const e = ohneAkzent(endung);
+    if (klein.endsWith(e) && klein.length - e.length >= 4){
+      mass = einheit;
+      kopf = kopf.slice(0, kopf.length - endung.length);
+      break;
+    }
+  }
+
+  let grund = ohneAkzent(kopf.toLowerCase());
+  if (SYNONYME[grund]) grund = SYNONYME[grund];
+  else {
+    grund = entplural(grund);
+    if (SYNONYME[grund]) grund = SYNONYME[grund];
+  }
+
+  return {
+    anzeige: kopf + (zeig.length ? ", " + zeig.join(", ") : ""),
+    key: [grund].concat(eig.sort()).join("|"),
+    mass: mass
+  };
 }
+function canonName(name){ return zerlege(name).anzeige || String(name || "").trim(); }
+
 /* Eine Zutat in die Sammlung einhängen. mult skaliert das ganze Rezept. */
+/* Von zwei Namen für dieselbe Sache gewinnt der kürzere: "Knoblauch" steht
+   da besser als "Knoblauchzehen". */
+function besserName(neu, alt){
+  if (!alt) return true;
+  if (neu.length !== alt.length) return neu.length < alt.length;
+  return neu.localeCompare(alt, "de") < 0;
+}
 function addZut(sum, z, mult){
-  const n = canonName(z[0]);
+  const t = zerlege(z[0]);
+  const n = t.anzeige;
   if (!n) return;
-  const a = Number(z[1]) || 0, u = z[2] || "", g = z[3] || "s";
-  const key = n.toLowerCase();
+  const a = Number(z[1]) || 0, g = z[3] || "s";
+  let u = z[2] || "";
+  if (t.mass && !u) u = t.mass;      // "3 Knoblauchzehen" wird zu "Knoblauch, 3 Zehen"
+  const key = t.key;
   const inf = unitInfo(u);
   if (!sum[key]) sum[key] = {key:key, n:n, g:g, u:{}, pantry:true, klein:true};
   const it = sum[key];
+  if (besserName(n, it.n)) it.n = n;
   if (it.g === "s" && g !== "s") it.g = g;
   it.u[inf.b] = (it.u[inf.b] || 0) + a * inf.f * (mult || 1);
   it.pantry = it.pantry && isStaple(n, u);   // frische Ware zieht die Position auf die Liste
@@ -427,6 +530,19 @@ function buildList(){
   Object.values(sum).forEach(i => { if (buy[i.key]) i.pantry = false; });
   return Object.values(sum).sort((x, y) => x.n.localeCompare(y.n, "de"));
 }
+/* Über das Teilen-Blatt des iPads: landet in Erinnerungen, Notizen, Mail,
+   Microsoft To Do und allem anderen, was Text annimmt. */
+function teileListe(titel, text){
+  if (!text){ toast("Nichts offen zum Teilen"); return; }
+  if (navigator.share){
+    navigator.share({title: titel, text: text}).catch(() => {});
+    return;
+  }
+  navigator.clipboard.writeText(text).then(
+    () => toast("Teilen geht hier nicht — Liste ist kopiert"),
+    () => toast("Teilen nicht möglich"));
+}
+
 /* ---------- Eigene Punkte ----------
    Alles, was kein Rezept mitbringt: Spülmittel, Briefmarken, Blumen für Oma.
    Sie hängen an der Woche und stehen unten auf der Liste. */
@@ -717,7 +833,8 @@ function printEssen(){
 }
 function printEinkauf(){
   const w = week(keyOf(cur)), items = buildList(), port = Number(DB.settings.port);
-  const kauf = items.filter(i => !i.pantry);
+  // Abgehaktes steht schon im Wagen und gehört nicht auf den Zettel
+  const kauf = items.filter(i => !i.pantry && !w.checked[i.key]);
   const groups = Object.keys(GRP).map(g => {
     const it = kauf.filter(i => i.g === g);
     if (!it.length) return "";
@@ -725,14 +842,15 @@ function printEinkauf(){
       '<div class="pi"><span class="pbox"></span><span>' + esc(i.n) + '</span><b>' +
       posText(i, port) + '</b></div>').join("") + '</div>';
   }).join("");
-  const eigene = extras(w).length
-    ? '<div class="pgrp"><h4>Zusätzlich</h4>' + extras(w).map(x =>
+  const offeneExtras = extras(w).filter(x => !w.checked["x:" + x.id]);
+  const eigene = offeneExtras.length
+    ? '<div class="pgrp"><h4>Zusätzlich</h4>' + offeneExtras.map(x =>
         '<div class="pi"><span class="pbox"></span><span>' + esc(x.text) + '</span></div>').join("") +
       '</div>'
     : "";
   const vorrat = items.filter(i => i.pantry).map(i => i.n).join(", ");
   return '<div class="psec">' + printHead("Einkaufsliste") +
-    '<div class="pcols">' + ((groups + eigene) || "<p>Noch keine Gerichte geplant.</p>") + '</div>' +
+    '<div class="pcols">' + ((groups + eigene) || "<p>Nichts mehr offen — alles abgehakt oder im Vorrat.</p>") + '</div>' +
     (vorrat ? '<div class="pnote">Aus dem Vorrat, nicht gekauft: ' + esc(vorrat) + '</div>' : '') +
     '</div>';
 }
@@ -790,6 +908,7 @@ function initEssen(){
     if (!t){ toast("Nichts offen"); return; }
     navigator.clipboard.writeText(t).then(() => toast("Liste kopiert"), () => toast("Kopieren nicht möglich"));
   };
+  $("#shopTeilen").onclick = () => teileListe("Einkaufsliste", listText());
   $("#resetChecks").onclick = () => { week(keyOf(cur)).checked = {}; save(); renderShop(); };
   $("#editPantry").onclick = () => { $("#pantryText").value = pantryList().join("\n"); $("#dPantry").showModal(); };
   $("#savePantry").onclick = () => {

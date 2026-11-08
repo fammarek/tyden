@@ -99,6 +99,8 @@
       <div class="barcats" id="shopStats"></div>
       <div class="baracts">
         <button class="btn" id="waShare">An WhatsApp</button>
+        <button class="btn ghost" id="shopTodo">An To Do</button>
+        <button class="btn ghost" id="shopTeilen">Teilen</button>
         <button class="btn ghost" id="copyList">Kopieren</button>
         <button class="btn ghost" id="editPantry">Vorrat</button>
         <button class="btn ghost" id="resetChecks">Haken zurücksetzen</button>
@@ -114,6 +116,8 @@
       <div class="barcats" id="bakeStats"></div>
       <div class="baracts">
         <button class="btn" id="bakeShare">An WhatsApp</button>
+        <button class="btn ghost" id="bakeTodo">An To Do</button>
+        <button class="btn ghost" id="bakeTeilen">Teilen</button>
         <button class="btn ghost" id="bakeCopy">Kopieren</button>
         <button class="btn ghost" id="bakeResetChecks">Haken zurücksetzen</button>
         <button class="btn ghost" id="bakeClear">Auswahl leeren</button>
@@ -418,6 +422,24 @@
       <b>Testen</b> auf <b>Produktion</b> setzen — im Testmodus läuft die Freigabe nach sieben Tagen ab.</p>
     <div id="gCals"></div>
     <hr>
+    <h3>Microsoft To Do</h3>
+    <div id="msStatus" class="gstatus"></div>
+    <div class="field">
+      <label class="lbl">Anwendungs-ID (Client-ID) aus Azure</label>
+      <input id="msClientId" placeholder="00000000-0000-0000-0000-000000000000">
+    </div>
+    <p class="hint">Umleitungs-URI, genau so in Azure eintragen (Plattform <b>Single-Page-Anwendung</b>):
+      <br><b id="msRedirect"></b></p>
+    <div class="baracts">
+      <button class="btn" id="msConnect">Mit Microsoft verbinden</button>
+      <button class="btn ghost" id="msTrennen">Trennen</button>
+    </div>
+    <div id="msListen"></div>
+    <p class="hint">Die Einrichtung steht Schritt für Schritt in <b>README.md</b>.
+      Microsoft gibt Web-Apps einen Zugang nur für 24 Stunden; danach fragt die App
+      beim Senden wieder nach der Anmeldung. Gesendet wird, was offen ist — jede
+      Position als eigene Aufgabe, Abgehaktes bleibt hier.</p>
+    <hr>
     <h3>Tastatur</h3>
     <label class="chk"><input type="checkbox" id="setZeichen"> Leiste mit Sonderzeichen einblenden</label>
     <p class="hint">Normalerweise aus. Welche Tastatur das iPad zeigt und ob es den Globus zum
@@ -457,6 +479,7 @@
 <script src="essen.js"></script>
 <script src="backen.js"></script>
 <script src="monat.js"></script>
+<script src="mstodo.js"></script>
 <script src="tasten.js"></script>
 <script src="notizen.js"></script>
 <script src="notizen-fest.js"></script>

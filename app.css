@@ -604,3 +604,4 @@ body.hat-balken .site{padding-right:3.2rem}
 .eigen{display:flex;gap:.5rem;margin-top:.9rem;padding-top:.8rem;border-top:1px dashed var(--line)}
 .eigen input{flex:1}
 .eigen .btn{flex:0 0 auto;min-width:3rem;font-size:1.1rem;line-height:1}
+.gstatus.warn{background:rgba(155,60,50,.12);border-color:rgba(155,60,50,.45)}

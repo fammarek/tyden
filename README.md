@@ -1,4 +1,4 @@
-# Týden · Wochenplan — v0.6.4
+# Týden · Wochenplan — v0.7.1
 
 Ein Wochenplaner fürs iPad: Kalender, Essensplan, Einkaufsliste und ein Notizblock
 für den Apple Pencil. Alles liegt in einer statischen Webseite, die Daten bleiben
@@ -114,3 +114,35 @@ Plan, Notizen und Rezepte liegen im Speicher des Browsers, Zeichnungen in Indexe
 Unter Zahnrad → **Sicherung speichern** bekommst du alles als JSON; *Sicherung laden*
 spielt es zurück. Wer Safari-Daten löscht, löscht auch die App-Daten — vor so etwas
 also sichern.
+
+## Microsoft To Do einrichten
+
+Damit die Einkaufsliste als einzelne Aufgaben in To Do landet, braucht es einmalig
+eine Anwendung im Azure-Portal. Kostenlos, ein privates Microsoft-Konto genügt.
+
+1. <https://entra.microsoft.com> öffnen und mit dem Konto anmelden, mit dem du
+   Microsoft To Do nutzt.
+2. Links **Anwendungen → App-Registrierungen**, dann oben **Neue Registrierung**.
+3. **Name**: `Tyden` (frei wählbar).
+4. **Unterstützte Kontotypen**: *Konten in einem beliebigen Organisationsverzeichnis
+   und persönliche Microsoft-Konten*. Mit einem privaten Konto geht sonst nichts.
+5. **Umleitungs-URI**: Plattform **Single-Page-Anwendung (SPA)** wählen und genau die
+   Adresse eintragen, die in der App unter Zahnrad → Microsoft To Do steht, also
+   `https://fammarek.github.io/tyden/`. Mit Schrägstrich am Ende, ohne `index.html`.
+6. **Registrieren** klicken. Auf der Übersichtsseite steht die
+   **Anwendungs-ID (Client)** — diese Zeichenfolge in der App unter Zahnrad →
+   Microsoft To Do eintragen.
+7. Links **API-Berechtigungen → Berechtigung hinzufügen → Microsoft Graph →
+   Delegierte Berechtigungen**, dort `Tasks.ReadWrite` suchen und hinzufügen.
+   Eine Administratorzustimmung ist für ein privates Konto nicht nötig.
+8. In der App auf **Mit Microsoft verbinden**. Nach der Anmeldung erscheint die
+   Auswahl, in welche To-Do-Liste geschrieben werden soll.
+
+Danach steht bei beiden Einkaufslisten der Knopf **An To Do**. Gesendet wird, was
+offen ist; jede Position wird eine eigene Aufgabe, die Menge steht hinter dem Namen.
+Was schon in der Liste steht, wird nicht doppelt angelegt.
+
+Microsoft gibt Web-Anwendungen einen Zugang nur für 24 Stunden. Danach fragt die App
+beim Senden wieder nach der Anmeldung — ein Klick, kein neues Einrichten. Ein
+Geheimschlüssel wird nirgends gebraucht und darf auch nicht angelegt werden; die
+Anmeldung läuft über PKCE.
