@@ -171,6 +171,35 @@ async function msListen(){
   return (d.value || []).map(l => ({id: l.id, name: l.displayName, standard: l.wellknownListName === "defaultList"}));
 }
 
+/* Eine Liste je Woche: "Einkauf KW 46". Gibt es sie schon, wird sie benutzt,
+   sonst legt die App sie an. */
+function msListName(was){
+  return (was === "Backen" ? "Backen KW " : "Einkauf KW ") + cur.week;
+}
+async function msListeAnlegen(name){
+  const t = await msToken();
+  if (!t) throw new Error("Nicht angemeldet.");
+  const r = await fetch(MS_GRAPH + "/me/todo/lists", {
+    method: "POST",
+    headers: {Authorization: "Bearer " + t, "Content-Type": "application/json"},
+    body: JSON.stringify({displayName: name})
+  });
+  const roh = await r.text();
+  let d = {};
+  try { d = JSON.parse(roh); } catch(e){}
+  if (!r.ok || !d.id) throw new Error("Liste anlegen ging nicht: " +
+    ((d.error && d.error.message) || roh.slice(0, 200)));
+  return d.id;
+}
+async function msZielliste(was){
+  if (!DB.settings.msProWoche) return {id: DB.settings.msListId, name: "", neu: false};
+  const name = msListName(was);
+  const listen = await msListen();
+  const da = listen.find(l => l.name.trim().toLowerCase() === name.toLowerCase());
+  if (da) return {id: da.id, name: name, neu: false};
+  return {id: await msListeAnlegen(name), name: name, neu: true};
+}
+
 /* Mehrere Aufgaben in einem Rutsch, der Stapel nimmt bis zu 20. */
 async function msAufgaben(listId, titel){
   const t = await msToken();
@@ -224,24 +253,31 @@ function msTitelBacken(){
 async function msSenden(titel, was){
   if (!msClientId()){ toast("Erst unter Zahnrad die Anwendungs-ID eintragen"); return; }
   if (!msVerbunden()){ toast("Erst unter Zahnrad mit Microsoft verbinden"); return; }
-  const liste = DB.settings.msListId;
-  if (!liste){ toast("Erst unter Zahnrad eine Liste auswählen"); return; }
+  if (!DB.settings.msProWoche && !DB.settings.msListId){
+    toast("Erst unter Zahnrad eine Liste auswählen"); return;
+  }
   if (!titel.length){ toast("Nichts offen zum Senden"); return; }
 
   toast("Wird an To Do geschickt …");
   try {
+    const ziel = await msZielliste(was);
+    if (!ziel.id) throw new Error("Keine Liste gefunden.");
     // Schon Vorhandenes nicht doppelt anlegen
     let da = [];
-    try {
-      const d = await msGet("/me/todo/lists/" + liste +
-        "/tasks?$filter=status ne 'completed'&$select=title&$top=200");
-      da = (d.value || []).map(x => String(x.title || "").toLowerCase());
-    } catch(e){}
+    if (!ziel.neu){
+      try {
+        const d = await msGet("/me/todo/lists/" + ziel.id +
+          "/tasks?$filter=status ne 'completed'&$select=title&$top=200");
+        da = (d.value || []).map(x => String(x.title || "").toLowerCase());
+      } catch(e){}
+    }
     const neu = titel.filter(n => da.indexOf(n.toLowerCase()) < 0);
     if (!neu.length){ toast("Steht schon alles in To Do"); return; }
-    const n = await msAufgaben(liste, neu);
+    const n = await msAufgaben(ziel.id, neu);
     const doppelt = titel.length - neu.length;
-    toast(n + (n === 1 ? " Aufgabe" : " Aufgaben") + " in To Do" +
+    const wohin = ziel.name ? " in „" + ziel.name + "“" : " in To Do";
+    toast(n + (n === 1 ? " Aufgabe" : " Aufgaben") + wohin +
+      (ziel.neu ? " (neu angelegt)" : "") +
       (doppelt ? ", " + doppelt + " war schon da" : ""));
   } catch(err){
     msStatus(err.message);
@@ -263,6 +299,12 @@ async function renderMsListen(){
   $("#msConnect").textContent = msVerbunden() ? "Neu anmelden" : "Mit Microsoft verbinden";
   $("#msTrennen").style.display = msVerbunden() ? "" : "none";
   if (!msVerbunden()){ box.innerHTML = ""; return; }
+  if (DB.settings.msProWoche){
+    box.innerHTML = '<p class="hint">Jeder Versand legt eine eigene Liste an, benannt nach der ' +
+      'Kalenderwoche: derzeit <b>' + esc(msListName("Einkauf")) + '</b> und <b>' +
+      esc(msListName("Backen")) + '</b>. Gibt es sie schon, wird sie weiterbenutzt.</p>';
+    return;
+  }
   box.innerHTML = '<p class="hint">Listen werden geladen …</p>';
   try {
     const listen = await msListen();
@@ -283,6 +325,12 @@ async function renderMsListen(){
 }
 
 function initMsTodo(){
+  const pw = $("#msProWoche");
+  if (pw){
+    if (DB.settings.msProWoche === undefined) DB.settings.msProWoche = true;
+    pw.checked = !!DB.settings.msProWoche;
+    pw.onchange = () => { DB.settings.msProWoche = pw.checked; save(); renderMsListen(); };
+  }
   const feld = $("#msClientId");
   if (feld){
     feld.value = DB.settings.msClientId || "";

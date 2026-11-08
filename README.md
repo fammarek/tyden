@@ -1,4 +1,4 @@
-# Týden · Wochenplan — v0.7.1
+# Týden · Wochenplan — v0.7.2
 
 Ein Wochenplaner fürs iPad: Kalender, Essensplan, Einkaufsliste und ein Notizblock
 für den Apple Pencil. Alles liegt in einer statischen Webseite, die Daten bleiben
@@ -135,8 +135,10 @@ eine Anwendung im Azure-Portal. Kostenlos, ein privates Microsoft-Konto genügt.
 7. Links **API-Berechtigungen → Berechtigung hinzufügen → Microsoft Graph →
    Delegierte Berechtigungen**, dort `Tasks.ReadWrite` suchen und hinzufügen.
    Eine Administratorzustimmung ist für ein privates Konto nicht nötig.
-8. In der App auf **Mit Microsoft verbinden**. Nach der Anmeldung erscheint die
-   Auswahl, in welche To-Do-Liste geschrieben werden soll.
+8. In der App auf **Mit Microsoft verbinden**. Danach legt jeder Versand eine eigene
+   Liste an, benannt nach der Kalenderwoche: `Einkauf KW 46`, beim Backen
+   `Backen KW 46`. Gibt es die Liste schon, wird sie weiterbenutzt. Wer lieber alles in
+   einer festen Liste sammelt, nimmt den Haken heraus und wählt die Liste selbst.
 
 Danach steht bei beiden Einkaufslisten der Knopf **An To Do**. Gesendet wird, was
 offen ist; jede Position wird eine eigene Aufgabe, die Menge steht hinter dem Namen.

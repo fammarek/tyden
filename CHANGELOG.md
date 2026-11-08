@@ -9,7 +9,7 @@ unter Zahnrad → Daten.
 
 ---
 
-## v0.7.1 — 8. November 2026
+## v0.7.2 — 8. November 2026
 
 **Behoben**
 - Abgehakte Zutaten standen weiter auf dem Ausdruck. Jetzt kommt nur noch auf den
@@ -31,7 +31,10 @@ unter Zahnrad → Daten.
 
 **Neu**
 - Anbindung an **Microsoft To Do**. Der Knopf "An To Do" schickt alles Offene als
-  einzelne Aufgaben in eine Liste deiner Wahl, Menge hinter dem Namen. Was dort schon
+  einzelne Aufgaben, Menge hinter dem Namen. Dafür legt die App je Woche eine eigene
+  Liste an: "Einkauf KW 46", beim Backen "Backen KW 46". Gibt es sie schon, wird sie
+  weiterbenutzt. Wer lieber alles in einer festen Liste sammelt, nimmt den Haken unter
+  Zahnrad heraus und wählt die Liste selbst. Was dort schon
   steht, wird nicht doppelt angelegt. Die Anmeldung läuft über OAuth mit PKCE, also
   ohne Geheimschlüssel; der Zugang liegt nur in diesem Browser. Einrichtung in
   README.md. Microsoft gibt Web-Apps einen Zugang nur für 24 Stunden, danach fragt
